@@ -17,7 +17,6 @@
   </properties>
 
   <modules>
-    <module>auth-service</module>
     <module>catalog-service</module>
     <module>common-library</module>
     <module>ecom-api-gateway</module>
