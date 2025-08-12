@@ -11,23 +11,24 @@
   <properties>
     <java.version>17</java.version>
     <spring.boot.version>3.2.0</spring.boot.version>
+    <spring-cloud.version>2023.0.1</spring-cloud.version>
     <maven.compiler.release>${java.version}</maven.compiler.release>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
   </properties>
 
   <modules>
-    <module>/auth-service</module>
-    <module>/catalog-service</module>
-    <module>/common-library</module>
-    <module>/ecom-api-gateway</module>
-    <module>/ecom-order-service</module>
-    <module>/eureka-service-registry</module>
-    <module>/inventory-service</module>
-    <module>/notification-service</module>
-    <module>/notification-worker</module>
-    <module>/payment-service</module>
-    <module>/product-service</module>
-    <module>/search-service</module>
+    <module>auth-service</module>
+    <module>catalog-service</module>
+    <module>common-library</module>
+    <module>ecom-api-gateway</module>
+    <module>ecom-order-service</module>
+    <module>eureka-service-registry</module>
+    <module>inventory-service</module>
+    <module>notification-service</module>
+    <module>notification-worker</module>
+    <module>payment-service</module>
+    <module>product-service</module>
+    <module>search-service</module>
     <!-- add more as you scaffold -->
   </modules>
 
@@ -40,6 +41,13 @@
         <type>pom</type>
         <scope>import</scope>
       </dependency>
+      <dependency>
+      <groupId>org.springframework.cloud</groupId>
+      <artifactId>spring-cloud-dependencies</artifactId>
+      <version>${spring-cloud.version}</version>
+      <type>pom</type>
+      <scope>import</scope>
+    </dependency>
     </dependencies>
   </dependencyManagement>
 

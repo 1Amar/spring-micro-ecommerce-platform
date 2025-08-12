@@ -8,31 +8,20 @@
     	<version>1.0.0</version>
     	<relativePath>../pom.xml</relativePath>
   	</parent>
-	<groupId>com.amar</groupId>
 	<artifactId>eureka-service-registry</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<name>eureka-service-registry</name>
 	<description>eureka-service-registry</description>
-	<url/>
-	<licenses>
-		<license/>
-	</licenses>
 	<developers>
 		<developer/>
 	</developers>
-	<scm>
-		<connection/>
-		<developerConnection/>
-		<tag/>
-		<url/>
-	</scm>
 	<properties>
 		<java.version>17</java.version>
 	</properties>
 	<dependencies>
 		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter</artifactId>
+			<groupId>org.springframework.cloud</groupId>
+			<artifactId>spring-cloud-starter-netflix-eureka-server</artifactId>
 		</dependency>
 
 		<dependency>
