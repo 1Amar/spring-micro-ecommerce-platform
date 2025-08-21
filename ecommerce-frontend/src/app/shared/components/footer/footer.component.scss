@@ -1,0 +1,174 @@
+.footer-custom {
+  background-color: var(--text-primary);
+  color: white;
+  padding: 3rem 0 1rem;
+  margin-top: auto;
+  
+  h5, h6 {
+    color: white;
+    margin-bottom: 1rem;
+  }
+  
+  h5 {
+    font-size: 1.25rem;
+    font-weight: 600;
+  }
+  
+  h6 {
+    font-size: 1rem;
+    font-weight: 500;
+  }
+  
+  p {
+    color: #BDBDBD;
+    line-height: 1.6;
+  }
+}
+
+.social-links {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1rem;
+  
+  a {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 50%;
+    color: white;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    
+    &:hover {
+      background-color: var(--primary-color);
+      transform: translateY(-2px);
+    }
+    
+    mat-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+    }
+  }
+}
+
+.footer-links {
+  list-style: none;
+  padding: 0;
+  
+  li {
+    margin-bottom: 0.5rem;
+    
+    a {
+      color: #BDBDBD;
+      text-decoration: none;
+      transition: color 0.3s ease;
+      
+      &:hover {
+        color: var(--primary-color);
+      }
+    }
+  }
+}
+
+.newsletter-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  
+  .newsletter-input {
+    .mat-mdc-form-field-wrapper {
+      padding-bottom: 0;
+    }
+    
+    ::ng-deep .mat-mdc-text-field-wrapper {
+      background-color: rgba(255, 255, 255, 0.1);
+      
+      .mat-mdc-form-field-focus-overlay {
+        background-color: transparent;
+      }
+    }
+    
+    ::ng-deep .mat-mdc-form-field-outline {
+      color: rgba(255, 255, 255, 0.3);
+    }
+    
+    ::ng-deep .mat-mdc-form-field-label {
+      color: #BDBDBD;
+    }
+    
+    ::ng-deep input {
+      color: white;
+    }
+  }
+  
+  .newsletter-btn {
+    align-self: flex-start;
+  }
+}
+
+.footer-divider {
+  margin: 2rem 0 1rem;
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.footer-bottom {
+  align-items: center;
+  
+  p {
+    margin: 0;
+    font-size: 0.875rem;
+  }
+  
+  .footer-legal {
+    display: flex;
+    gap: 1.5rem;
+    justify-content: flex-end;
+    
+    a {
+      color: #BDBDBD;
+      text-decoration: none;
+      font-size: 0.875rem;
+      transition: color 0.3s ease;
+      
+      &:hover {
+        color: var(--primary-color);
+      }
+    }
+  }
+}
+
+// Responsive Design
+@media (max-width: 768px) {
+  .footer-custom {
+    padding: 2rem 0 1rem;
+    text-align: center;
+  }
+  
+  .social-links {
+    justify-content: center;
+  }
+  
+  .newsletter-form {
+    align-items: center;
+  }
+  
+  .footer-bottom {
+    text-align: center;
+    
+    .footer-legal {
+      justify-content: center;
+      margin-top: 1rem;
+    }
+  }
+}
+
+@media (max-width: 576px) {
+  .footer-legal {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+}

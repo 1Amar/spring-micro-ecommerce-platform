@@ -1,0 +1,31 @@
+.app-container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.main-content {
+  flex: 1;
+  padding-top: 64px; // Account for fixed header height
+  min-height: calc(100vh - 64px - 200px); // Subtract header and footer height
+}
+
+.loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(255, 255, 255, 0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+}
+
+// Responsive adjustments
+@media (max-width: 768px) {
+  .main-content {
+    padding-top: 56px; // Smaller header on mobile
+  }
+}

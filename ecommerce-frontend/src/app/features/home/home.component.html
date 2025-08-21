@@ -1,0 +1,148 @@
+<!-- Hero Section -->
+<section class="hero-section">
+  <div class="hero-content">
+    <div class="container-fluid">
+      <div class="row align-items-center">
+        <div class="col-lg-6">
+          <div class="hero-text">
+            <h1 class="hero-title">Welcome to ECommerce Platform</h1>
+            <p class="hero-subtitle">Discover amazing products at unbeatable prices. Shop with confidence and enjoy fast, free delivery.</p>
+            <button mat-raised-button color="primary" size="large" class="hero-cta" (click)="onShopNowClick()">
+              <mat-icon>shopping_cart</mat-icon>
+              Shop Now
+            </button>
+          </div>
+        </div>
+        <div class="col-lg-6">
+          <div class="hero-image">
+            <img src="/assets/images/hero-shopping.svg" alt="Shopping Hero" class="img-fluid">
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Categories Section -->
+<section class="categories-section">
+  <div class="container-fluid">
+    <div class="section-header">
+      <h2>Shop by Category</h2>
+      <p>Explore our wide range of product categories</p>
+    </div>
+    
+    <div class="categories-grid">
+      <mat-card 
+        *ngFor="let category of categories$ | async" 
+        class="category-card"
+        (click)="onCategoryClick(category)"
+        role="button"
+        tabindex="0">
+        <mat-card-content>
+          <div class="category-icon">
+            <mat-icon>category</mat-icon>
+          </div>
+          <h3>{{ category.name }}</h3>
+          <p *ngIf="category.description">{{ category.description }}</p>
+        </mat-card-content>
+      </mat-card>
+    </div>
+  </div>
+</section>
+
+<!-- Featured Products Section -->
+<section class="featured-products-section">
+  <div class="container-fluid">
+    <div class="section-header">
+      <h2>Featured Products</h2>
+      <p>Check out our most popular items</p>
+    </div>
+    
+    <div class="products-grid">
+      <mat-card 
+        *ngFor="let product of featuredProducts$ | async" 
+        class="product-card"
+        (click)="onProductClick(product)">
+        
+        <div class="product-image">
+          <img [src]="getProductImageUrl(product)" [alt]="product.name" loading="lazy">
+          <div class="product-badge" *ngIf="product.discount">
+            <mat-chip color="accent">{{ product.discount }}% OFF</mat-chip>
+          </div>
+        </div>
+        
+        <mat-card-content class="product-info">
+          <h3 class="product-name">{{ product.name }}</h3>
+          <p class="product-brand">{{ product.brand }}</p>
+          
+          <div class="product-rating">
+            <div class="stars">
+              <mat-icon *ngFor="let star of [1,2,3,4,5]" 
+                       [class.filled]="star <= product.rating">
+                star
+              </mat-icon>
+            </div>
+            <span class="rating-count">({{ product.reviewCount }})</span>
+          </div>
+          
+          <div class="product-pricing">
+            <span class="current-price">{{ formatPrice(product.price) }}</span>
+            <span class="original-price" *ngIf="product.originalPrice && product.originalPrice > product.price">
+              {{ formatPrice(product.originalPrice) }}
+            </span>
+          </div>
+        </mat-card-content>
+        
+        <mat-card-actions class="product-actions">
+          <button mat-raised-button color="primary" class="add-to-cart-btn" (click)="$event.stopPropagation()">
+            <mat-icon>add_shopping_cart</mat-icon>
+            Add to Cart
+          </button>
+        </mat-card-actions>
+      </mat-card>
+    </div>
+    
+    <div class="text-center mt-4">
+      <button mat-stroked-button color="primary" routerLink="/products">
+        View All Products
+        <mat-icon>arrow_forward</mat-icon>
+      </button>
+    </div>
+  </div>
+</section>
+
+<!-- Features Section -->
+<section class="features-section">
+  <div class="container-fluid">
+    <div class="row">
+      <div class="col-lg-3 col-md-6 mb-4">
+        <div class="feature-item">
+          <mat-icon class="feature-icon">local_shipping</mat-icon>
+          <h4>Free Shipping</h4>
+          <p>Free shipping on orders over $50</p>
+        </div>
+      </div>
+      <div class="col-lg-3 col-md-6 mb-4">
+        <div class="feature-item">
+          <mat-icon class="feature-icon">security</mat-icon>
+          <h4>Secure Payment</h4>
+          <p>100% secure payment processing</p>
+        </div>
+      </div>
+      <div class="col-lg-3 col-md-6 mb-4">
+        <div class="feature-item">
+          <mat-icon class="feature-icon">support_agent</mat-icon>
+          <h4>24/7 Support</h4>
+          <p>Round-the-clock customer support</p>
+        </div>
+      </div>
+      <div class="col-lg-3 col-md-6 mb-4">
+        <div class="feature-item">
+          <mat-icon class="feature-icon">cached</mat-icon>
+          <h4>Easy Returns</h4>
+          <p>30-day hassle-free returns</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

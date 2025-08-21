@@ -1,0 +1,139 @@
+spring:
+  application:
+    name: ecom-api-gateway
+  profiles:
+    include: observability
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      timeout: 2000ms
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:8080/realms/ecommerce-realm
+          jwk-set-uri: http://localhost:8080/realms/ecommerce-realm/protocol/openid-connect/certs
+  cloud:
+    gateway:
+      routes:
+        # Order simulation controller routes - handles all simulation endpoints
+        - id: order-simulation-controller
+          uri: lb://ecom-order-service
+          predicates:
+            - Path=/api/v1/simulation/**
+            
+        # Microservice routes - correlation ID preserved from frontend
+        - id: inventory-service
+          uri: lb://inventory-service
+          predicates:
+            - Path=/api/v1/inventory/**
+            
+        - id: product-service
+          uri: lb://product-service
+          predicates:
+            - Path=/api/v1/products/**
+            
+        - id: order-service
+          uri: lb://ecom-order-service
+          predicates:
+            - Path=/api/v1/orders/**
+            
+        - id: payment-service
+          uri: lb://payment-service
+          predicates:
+            - Path=/api/v1/payments/**
+            
+        - id: notification-service
+          uri: lb://notification-service
+          predicates:
+            - Path=/api/v1/notifications/**
+            
+        - id: catalog-service
+          uri: lb://catalog-service
+          predicates:
+            - Path=/api/v1/catalog/**
+            
+        - id: search-service
+          uri: lb://search-service
+          predicates:
+            - Path=/api/v1/search/**
+      default-filters:
+        - name: PreserveHostHeader
+        # Circuit Breaker REMOVED - was causing 403 FORBIDDEN on healthy services
+        # Rate Limiter REMOVED - Redis dependency causing issues
+# CORS handled by Spring Security instead of Spring Cloud Gateway
+      discovery:
+        locator:
+          enabled: true
+          lower-case-service-id: true
+
+server:
+  port: 8081
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+    register-with-eureka: true
+    fetch-registry: true
+  instance:
+    prefer-ip-address: true
+    lease-renewal-interval-in-seconds: 30
+    lease-expiration-duration-in-seconds: 90
+
+# Observability Configuration
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus,gateway
+  endpoint:
+    health:
+      show-details: always
+    metrics:
+      enabled: true
+    prometheus:
+      enabled: true
+    gateway:
+      enabled: true
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+        gateway.requests: true
+        resilience4j.circuitbreaker.calls: true
+    tags:
+      application: ${spring.application.name}
+      environment: dev
+  tracing:
+    sampling:
+      probability: 1.0
+
+# OpenTelemetry Configuration
+otel:
+  exporter:
+    otlp:
+      endpoint: http://localhost:4318
+      protocol: http/protobuf
+  traces:
+    exporter: otlp
+  resource:
+    attributes:
+      service.name: ${spring.application.name}
+      service.version: 1.0.0
+      deployment.environment: dev
+
+# Logging Configuration
+logging:
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%X{correlationId:-}] [%thread] %-5level %logger{36} - %msg%n"
+  level:
+    com.amar: DEBUG
+    org.springframework.cloud.gateway: DEBUG
+    org.springframework.web.reactive.function.client: DEBUG
+    org.springframework.cloud.gateway.filter: INFO
+    org.springframework.cloud.gateway.handler: INFO
+    org.springframework.web.server: INFO
+    reactor.netty.http: INFO
+
+# Circuit Breaker Configuration REMOVED - was causing 403 FORBIDDEN issues

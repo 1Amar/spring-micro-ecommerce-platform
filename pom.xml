@@ -24,7 +24,6 @@
     <module>eureka-service-registry</module>
     <module>inventory-service</module>
     <module>notification-service</module>
-    <module>notification-worker</module>
     <module>payment-service</module>
     <module>product-service</module>
     <module>search-service</module>

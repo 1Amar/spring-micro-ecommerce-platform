@@ -1,0 +1,4 @@
+<div class="loading-spinner-container" [ngClass]="size">
+  <mat-spinner [diameter]="getDiameter()"></mat-spinner>
+  <p class="loading-message" *ngIf="message">{{ message }}</p>
+</div>

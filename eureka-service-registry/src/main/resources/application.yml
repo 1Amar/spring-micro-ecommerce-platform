@@ -1,0 +1,62 @@
+spring:
+  application:
+    name: eureka-service-registry
+  profiles:
+    include: observability
+
+server:
+  port: 8761
+
+# Eureka server configs
+eureka:
+  client:
+    register-with-eureka: false
+    fetch-registry: false
+  server:
+    enable-self-preservation: false
+    eviction-interval-timer-in-ms: 4000
+
+# Observability Configuration
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus,env,beans,eureka
+  endpoint:
+    health:
+      show-details: always
+    metrics:
+      enabled: true
+    prometheus:
+      enabled: true
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+    tags:
+      application: ${spring.application.name}
+      environment: dev
+
+# OpenTelemetry Tracing Configuration
+management.tracing:
+  sampling:
+    probability: 1.0
+
+# OpenTelemetry Configuration
+otel:
+  exporter:
+    otlp:
+      endpoint: http://localhost:14268/api/traces
+  traces:
+    exporter: otlp
+  service:
+    name: ${spring.application.name}
+    version: 1.0.0
+
+# Logging Configuration
+logging:
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%X{correlationId:-}] [%thread] %-5level %logger{36} - %msg%n"
+  level:
+    com.amar: DEBUG
+    com.netflix.eureka: INFO
+    com.netflix.discovery: INFO

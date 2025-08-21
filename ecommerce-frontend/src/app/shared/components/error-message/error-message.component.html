@@ -1,0 +1,19 @@
+<div 
+  *ngIf="!dismissed"
+  class="error-message" 
+  [ngClass]="type">
+  
+  <div class="message-content">
+    <mat-icon *ngIf="showIcon" class="message-icon">{{ iconName }}</mat-icon>
+    <span class="message-text">{{ message }}</span>
+  </div>
+  
+  <button 
+    *ngIf="dismissible"
+    mat-icon-button 
+    class="dismiss-button"
+    (click)="onDismiss()"
+    aria-label="Dismiss">
+    <mat-icon>close</mat-icon>
+  </button>
+</div>

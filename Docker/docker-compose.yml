@@ -64,6 +64,21 @@ services:
     networks:
       - microservices-network
 
+  logstash:
+    image: docker.elastic.co/logstash/logstash:8.8.0
+    container_name: logstash
+    ports:
+      - "5000:5000/tcp"
+      - "9600:9600"
+    volumes:
+      - ./logstash.conf:/usr/share/logstash/pipeline/logstash.conf
+    environment:
+      LS_JAVA_OPTS: "-Xms256m -Xmx256m"
+    depends_on:
+      - elasticsearch
+    networks:
+      - microservices-network
+
   kibana:
     image: docker.elastic.co/kibana/kibana:8.8.0
     container_name: kibana
@@ -73,6 +88,7 @@ services:
       - "5601:5601"
     depends_on:
       - elasticsearch
+      - logstash
     networks:
       - microservices-network
 
@@ -85,32 +101,60 @@ services:
       - microservices-network
 
   keycloak:
-    image: quay.io/keycloak/keycloak:21.1.1
+    image: quay.io/keycloak/keycloak:22.0.1
     container_name: keycloak_ecom
     environment:
       KC_DB: postgres
       KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
-      KC_DB_USERNAME: devuser
-      KC_DB_PASSWORD: devpass
+      KC_DB_USERNAME: keycloak_user
+      KC_DB_PASSWORD: keycloak_pass
       KEYCLOAK_ADMIN: admin
       KEYCLOAK_ADMIN_PASSWORD: admin
       KC_HOSTNAME_STRICT: false
       KC_HOSTNAME_STRICT_HTTPS: false
       KC_HTTP_ENABLED: true
+      KC_HEALTH_ENABLED: true
+      KC_HTTP_CORS: true
+      KC_HTTP_CORS_HEADERS: "Authorization,Content-Type,X-Requested-With"
+      KC_HTTP_CORS_METHODS: "GET,POST,PUT,DELETE,OPTIONS"
+      KC_HTTP_CORS_ORIGINS: "http://localhost:4200,http://localhost:4201,http://127.0.0.1:4200,http://127.0.0.1:4201"
     command: start-dev
+    volumes:
+      - ./keycloak-themes:/opt/keycloak/themes/custom
     ports:
       - "8080:8080"
     depends_on:
       postgres:
-          condition: service_healthy
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/health/ready || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
     networks:
       - microservices-network
 
   jaeger:
     image: jaegertracing/all-in-one:1.44
+    container_name: jaeger
+    environment:
+      COLLECTOR_ZIPKIN_HOST_PORT: :9411
+      COLLECTOR_OTLP_ENABLED: true
+      SPAN_STORAGE_TYPE: memory
+      QUERY_BASE_PATH: /
     ports:
-      - "16686:16686"
-      - "14268:14268"
+      - "16686:16686"     # Jaeger UI
+      - "14268:14268"     # Jaeger collector HTTP
+      - "14250:14250"     # Jaeger collector gRPC
+      - "9411:9411"       # Zipkin compatible endpoint (legacy)
+      - "4317:4317"       # OTLP gRPC receiver
+      - "4318:4318"       # OTLP HTTP receiver
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:16686/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
     networks:
       - microservices-network
 

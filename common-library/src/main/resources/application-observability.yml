@@ -1,0 +1,76 @@
+# Observability Configuration Template
+# Include this in service-specific application.yml files
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus,env,beans,configprops
+  endpoint:
+    health:
+      show-details: always
+      show-components: always
+    metrics:
+      enabled: true
+    prometheus:
+      enabled: true
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+        resilience4j.circuitbreaker.calls: true
+    tags:
+      application: ${spring.application.name}
+      environment: dev
+
+# OpenTelemetry Tracing Configuration
+management.tracing:
+  sampling:
+    probability: 1.0
+
+# OpenTelemetry Configuration  
+otel:
+  exporter:
+    otlp:
+      endpoint: http://localhost:4318
+      protocol: http/protobuf
+  traces:
+    exporter: otlp
+  metrics:
+    exporter: otlp
+  resource:
+    attributes:
+      service.name: ${spring.application.name}
+      service.version: 1.0.0
+      deployment.environment: dev
+
+# Logging Configuration
+logging:
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%X{correlationId:-}] [%thread] %-5level %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%X{correlationId:-}] [%thread] %-5level %logger{36} - %msg%n"
+  level:
+    com.amar: DEBUG
+    org.springframework.cloud.gateway: DEBUG
+    org.springframework.web.reactive.function.client: DEBUG
+    org.springframework.web.client: DEBUG
+    org.springframework.security: DEBUG
+    brave.sampler: DEBUG
+
+# Spring Security OAuth2 Configuration
+spring:
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:8080/realms/ecommerce-realm
+          jwk-set-uri: http://localhost:8080/realms/ecommerce-realm/protocol/openid-connect/certs
+
+# Keycloak Configuration
+keycloak:
+  auth-server-url: http://localhost:8080
+  realm: ecommerce-realm
+  resource: ecommerce-backend
+  credentials:
+    secret: backend-secret-key
+  use-resource-role-mappings: true
+  cors: true

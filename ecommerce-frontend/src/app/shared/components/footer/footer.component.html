@@ -1,0 +1,84 @@
+<footer class="footer-custom">
+  <div class="container-fluid">
+    <div class="row">
+      
+      <!-- Company Info -->
+      <div class="col-lg-3 col-md-6 mb-4">
+        <h5>ECommerce Platform</h5>
+        <p>Your one-stop shop for all your needs. Quality products, fast delivery, excellent service.</p>
+        <div class="social-links">
+          <a href="#" aria-label="Facebook"><mat-icon>facebook</mat-icon></a>
+          <a href="#" aria-label="Twitter"><mat-icon>twitter</mat-icon></a>
+          <a href="#" aria-label="Instagram"><mat-icon>instagram</mat-icon></a>
+          <a href="#" aria-label="LinkedIn"><mat-icon>linkedin</mat-icon></a>
+        </div>
+      </div>
+      
+      <!-- Quick Links -->
+      <div class="col-lg-2 col-md-6 mb-4">
+        <h6>Quick Links</h6>
+        <ul class="footer-links">
+          <li><a routerLink="/home">Home</a></li>
+          <li><a routerLink="/products">Products</a></li>
+          <li><a routerLink="/search">Search</a></li>
+          <li><a routerLink="/cart">Shopping Cart</a></li>
+        </ul>
+      </div>
+      
+      <!-- Customer Service -->
+      <div class="col-lg-2 col-md-6 mb-4">
+        <h6>Customer Service</h6>
+        <ul class="footer-links">
+          <li><a href="#" onclick="return false;">Contact Us</a></li>
+          <li><a href="#" onclick="return false;">FAQ</a></li>
+          <li><a href="#" onclick="return false;">Returns</a></li>
+          <li><a href="#" onclick="return false;">Shipping Info</a></li>
+          <li><a href="#" onclick="return false;">Size Guide</a></li>
+        </ul>
+      </div>
+      
+      <!-- Account -->
+      <div class="col-lg-2 col-md-6 mb-4">
+        <h6>My Account</h6>
+        <ul class="footer-links">
+          <li><a routerLink="/profile">My Profile</a></li>
+          <li><a routerLink="/orders">Order History</a></li>
+          <li><a routerLink="/profile/addresses">Addresses</a></li>
+          <li><a routerLink="/profile/payment-methods">Payment Methods</a></li>
+        </ul>
+      </div>
+      
+      <!-- Newsletter -->
+      <div class="col-lg-3 col-md-6 mb-4">
+        <h6>Newsletter</h6>
+        <p>Subscribe to get updates on new products and offers.</p>
+        <div class="newsletter-form">
+          <mat-form-field appearance="outline" class="newsletter-input">
+            <input matInput placeholder="Enter your email" type="email">
+          </mat-form-field>
+          <button mat-raised-button color="accent" class="newsletter-btn">
+            Subscribe
+          </button>
+        </div>
+      </div>
+      
+    </div>
+    
+    <mat-divider class="footer-divider"></mat-divider>
+    
+    <!-- Bottom Footer -->
+    <div class="row footer-bottom">
+      <div class="col-md-6">
+        <p>&copy; {{ currentYear }} ECommerce Platform. All rights reserved.</p>
+      </div>
+      <div class="col-md-6 text-end">
+        <div class="footer-legal">
+          <a href="#" onclick="return false;">Privacy Policy</a>
+          <a href="#" onclick="return false;">Terms of Service</a>
+          <a href="#" onclick="return false;">Cookie Policy</a>
+        </div>
+      </div>
+    </div>
+    
+  </div>
+</footer>

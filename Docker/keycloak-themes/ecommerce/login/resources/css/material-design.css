@@ -1,0 +1,427 @@
+/* Modern Material Design Theme for Keycloak - E-Commerce Platform */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/icon?family=Material+Icons');
+
+/* CSS Variables - Modern Design System */
+:root {
+  --primary-color: #2563eb;
+  --primary-hover: #1d4ed8;
+  --secondary-color: #64748b;
+  --accent-color: #f59e0b;
+  --success-color: #10b981;
+  --warning-color: #f59e0b;
+  --error-color: #ef4444;
+  --text-primary: #1e293b;
+  --text-secondary: #64748b;
+  --text-light: #94a3b8;
+  --background-color: #f8fafc;
+  --card-background: #ffffff;
+  --border-color: #e2e8f0;
+  --border-focus: #3b82f6;
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+/* Reset and Base Styles */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Inter', 'Roboto', -apple-system, BlinkMacSystemFont, sans-serif !important;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-primary);
+  line-height: 1.5;
+  font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+}
+
+/* Main Container */
+.login-pf {
+  background: none !important;
+  padding: 0;
+}
+
+.login-pf-page {
+  background: none !important;
+}
+
+/* Login Card - Modern Design */
+#kc-container {
+  background: var(--card-background);
+  border-radius: 20px;
+  box-shadow: var(--shadow-xl);
+  padding: 0;
+  max-width: 420px;
+  width: 100%;
+  overflow: hidden;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+#kc-container-wrapper {
+  padding: 0;
+}
+
+/* Header Section - Brand */
+#kc-header {
+  background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-hover) 100%);
+  padding: 2.5rem 2rem 1.5rem 2rem;
+  text-align: center;
+  color: white;
+  margin: 0;
+  position: relative;
+}
+
+#kc-header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.9) 0%, rgba(29, 78, 216, 0.9) 100%);
+  backdrop-filter: blur(10px);
+}
+
+#kc-header-wrapper {
+  font-size: 1.75rem;
+  font-weight: 600;
+  margin: 0;
+  position: relative;
+  z-index: 1;
+  letter-spacing: -0.025em;
+}
+
+/* Brand Logo */
+#kc-logo-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+#kc-logo-wrapper:before {
+  content: 'shopping_cart';
+  font-family: 'Material Icons';
+  font-size: 2rem;
+  opacity: 0.9;
+}
+
+/* Content Area */
+#kc-content {
+  padding: 2.5rem 2rem 2rem 2rem;
+  background: var(--card-background);
+}
+
+#kc-content-wrapper {
+  margin: 0;
+}
+
+/* Form Styles */
+#kc-form {
+  margin: 0;
+}
+
+.form-group {
+  margin-bottom: 1.5rem;
+  position: relative;
+}
+
+/* Input Container Styling */
+.form-group input {
+  margin-top: 0.25rem;
+}
+
+/* Error styling for inputs */
+.form-control[aria-invalid="true"] {
+  border-color: var(--error-color) !important;
+}
+
+.form-control[aria-invalid="true"]:focus {
+  border-color: var(--error-color) !important;
+  box-shadow: 0 0 0 3px rgba(244, 67, 54, 0.1) !important;
+}
+
+/* Modern Input Fields */
+.form-control {
+  border: 1.5px solid var(--border-color) !important;
+  border-radius: 12px !important;
+  padding: 16px 20px !important;
+  font-size: 0.95rem !important;
+  font-weight: 400 !important;
+  background: rgba(248, 250, 252, 0.8) !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  box-shadow: var(--shadow-sm) !important;
+  color: var(--text-primary) !important;
+  width: 100% !important;
+  font-family: 'Inter', sans-serif !important;
+  letter-spacing: 0.01em;
+}
+
+.form-control:hover {
+  border-color: var(--border-focus) !important;
+  background: rgba(255, 255, 255, 0.9) !important;
+  box-shadow: var(--shadow-md) !important;
+}
+
+.form-control:focus {
+  border-color: var(--primary-color) !important;
+  outline: none !important;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1), var(--shadow-md) !important;
+  background: rgba(255, 255, 255, 1) !important;
+  transform: translateY(-1px);
+}
+
+/* Input placeholder styling */
+.form-control::placeholder {
+  color: var(--text-light) !important;
+  opacity: 1 !important;
+  font-weight: 400;
+}
+
+/* Input Labels */
+label {
+  font-size: 0.875rem !important;
+  color: var(--text-primary) !important;
+  font-weight: 500 !important;
+  margin-bottom: 0.5rem !important;
+  display: block !important;
+  font-family: 'Roboto', sans-serif !important;
+}
+
+/* Buttons - Material Design */
+.btn {
+  border-radius: 8px !important;
+  font-weight: 500 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.5px !important;
+  padding: 12px 24px !important;
+  font-size: 0.875rem !important;
+  transition: all 0.3s ease !important;
+  border: none !important;
+  cursor: pointer !important;
+}
+
+.btn-primary, #kc-login {
+  background: var(--primary-color) !important;
+  color: white !important;
+  box-shadow: 0 2px 4px rgba(33, 150, 243, 0.3) !important;
+}
+
+.btn-primary:hover, #kc-login:hover {
+  background: #1976D2 !important;
+  box-shadow: 0 4px 8px rgba(33, 150, 243, 0.4) !important;
+  transform: translateY(-1px) !important;
+}
+
+.btn-secondary {
+  background: var(--text-secondary) !important;
+  color: white !important;
+}
+
+.btn-secondary:hover {
+  background: #424242 !important;
+}
+
+/* Login Button Full Width */
+#kc-form-buttons {
+  margin-top: 2rem;
+}
+
+#kc-form-buttons .btn {
+  width: 100%;
+  font-size: 1rem !important;
+  padding: 14px !important;
+}
+
+/* Links */
+a {
+  color: var(--primary-color) !important;
+  text-decoration: none !important;
+  transition: color 0.3s ease !important;
+}
+
+a:hover {
+  color: #1976D2 !important;
+  text-decoration: underline !important;
+}
+
+/* Info Area */
+#kc-info {
+  margin-top: 2rem;
+  padding-top: 2rem;
+  border-top: 1px solid var(--border-color);
+}
+
+#kc-info-wrapper {
+  text-align: center;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
+/* Error Messages */
+.alert-error, #input-error, .kc-error {
+  background: #ffebee !important;
+  border: 1px solid #ffcdd2 !important;
+  color: #c62828 !important;
+  border-radius: 8px !important;
+  padding: 12px 16px !important;
+  margin: 0.5rem 0 1rem 0 !important;
+  font-size: 0.875rem !important;
+  font-family: 'Roboto', sans-serif !important;
+  display: block !important;
+}
+
+/* Input specific error messages */
+#input-error {
+  margin-top: 0.5rem !important;
+  margin-bottom: 0 !important;
+  padding: 8px 12px !important;
+  font-size: 0.8125rem !important;
+}
+
+/* Success Messages */
+.alert-success {
+  background: #e8f5e8 !important;
+  border: 1px solid #c8e6c9 !important;
+  color: #2e7d32 !important;
+  border-radius: 8px !important;
+  padding: 12px !important;
+  margin-bottom: 1rem !important;
+}
+
+/* Warning Messages */
+.alert-warning {
+  background: #fff8e1 !important;
+  border: 1px solid #ffecb3 !important;
+  color: #f57f17 !important;
+  border-radius: 8px !important;
+  padding: 12px !important;
+  margin-bottom: 1rem !important;
+}
+
+/* Info Messages */
+.alert-info {
+  background: #e3f2fd !important;
+  border: 1px solid #bbdefb !important;
+  color: #1976d2 !important;
+  border-radius: 8px !important;
+  padding: 12px !important;
+  margin-bottom: 1rem !important;
+}
+
+/* Brand Logo Area */
+#kc-logo {
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
+#kc-logo-wrapper {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1.25rem;
+  font-weight: 500;
+  color: white;
+}
+
+/* Add shopping cart icon */
+#kc-logo-wrapper:before {
+  content: 'shopping_cart';
+  font-family: 'Material Icons';
+  font-size: 1.5rem;
+}
+
+/* Form Actions */
+#kc-form-options {
+  margin-top: 1rem;
+  text-align: center;
+}
+
+#kc-form-options a {
+  font-size: 0.875rem;
+}
+
+/* Remember Me Checkbox */
+.checkbox label {
+  display: flex !important;
+  align-items: center;
+  font-size: 0.875rem !important;
+  cursor: pointer;
+}
+
+.checkbox input[type="checkbox"] {
+  margin-right: 0.5rem;
+  accent-color: var(--primary-color);
+}
+
+/* Responsive Design */
+@media (max-width: 480px) {
+  #kc-container {
+    margin: 1rem;
+    max-width: calc(100% - 2rem);
+  }
+  
+  #kc-header {
+    padding: 1.5rem;
+  }
+  
+  #kc-content {
+    padding: 1.5rem;
+  }
+}
+
+/* Remove default Keycloak styling */
+.login-pf-header {
+  display: none !important;
+}
+
+#kc-page-title {
+  display: none;
+}
+
+/* Social Login Buttons (if enabled) */
+.kc-social-providers {
+  margin-top: 2rem;
+  padding-top: 2rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.kc-social-provider-logo {
+  border-radius: 8px !important;
+  padding: 12px !important;
+  margin-bottom: 0.5rem !important;
+}
+
+/* Loading Animation */
+.kc-loading {
+  position: relative;
+  pointer-events: none;
+}
+
+.kc-loading:after {
+  content: '';
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  border: 2px solid transparent;
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+@keyframes spin {
+  to { transform: translateY(-50%) rotate(360deg); }
+}
