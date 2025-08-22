@@ -53,3 +53,5 @@ logging:
   level:
     com.amar: DEBUG
     org.springframework.web.client: DEBUG
+    com.netflix.eureka: OFF
+    com.netflix.discovery: OFF

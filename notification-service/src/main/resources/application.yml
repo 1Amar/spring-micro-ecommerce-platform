@@ -5,7 +5,7 @@ spring:
     include: observability
 
 server:
-  port: 8087
+  port: 8085
 
 eureka:
   client:
@@ -52,3 +52,5 @@ logging:
     console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%X{correlationId:-}] [%thread] %-5level %logger{36} - %msg%n"
   level:
     com.amar: DEBUG
+    com.netflix.eureka: OFF
+    com.netflix.discovery: OFF

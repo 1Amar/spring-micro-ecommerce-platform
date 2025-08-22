@@ -5,7 +5,7 @@ spring:
     include: observability
 
 server:
-  port: 8085
+  port: 8088
 
 eureka:
   client:
@@ -53,3 +53,5 @@ logging:
   level:
     com.amar: DEBUG
     org.springframework.web.client: DEBUG
+    com.netflix.eureka: DEBUG
+    com.netflix.discovery: DEBUG

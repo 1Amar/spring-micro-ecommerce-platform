@@ -1,0 +1,289 @@
+{
+  "dashboard": {
+    "id": null,
+    "uid": "microservices-overview",
+    "title": "Spring Boot Microservices E-Commerce Platform",
+    "tags": ["spring-boot", "microservices", "ecommerce", "observability"],
+    "style": "dark",
+    "timezone": "browser",
+    "refresh": "30s",
+    "time": {
+      "from": "now-1h",
+      "to": "now"
+    },
+    "panels": [
+      {
+        "id": 1,
+        "title": "Services Health Status",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "up{job=~\".*service.*|api-gateway|eureka-service-registry\"}",
+            "legendFormat": "{{job}}",
+            "refId": "A"
+          }
+        ],
+        "gridPos": {"h": 6, "w": 12, "x": 0, "y": 0},
+        "options": {
+          "reduceOptions": {
+            "values": false,
+            "calcs": ["lastNotNull"],
+            "fields": ""
+          },
+          "orientation": "auto",
+          "textMode": "auto",
+          "colorMode": "value",
+          "graphMode": "area",
+          "justifyMode": "auto"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "mappings": [
+              {"options": {"0": {"text": "DOWN", "color": "red"}}, "type": "value"},
+              {"options": {"1": {"text": "UP", "color": "green"}}, "type": "value"}
+            ],
+            "thresholds": {
+              "steps": [
+                {"color": "red", "value": 0},
+                {"color": "green", "value": 1}
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 2,
+        "title": "Total Services Count",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "count(up{job=~\".*service.*|api-gateway|eureka-service-registry\"})",
+            "legendFormat": "Total Services",
+            "refId": "A"
+          }
+        ],
+        "gridPos": {"h": 3, "w": 6, "x": 12, "y": 0},
+        "options": {
+          "reduceOptions": {
+            "values": false,
+            "calcs": ["lastNotNull"]
+          },
+          "textMode": "auto",
+          "colorMode": "value"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "thresholds"},
+            "thresholds": {
+              "steps": [
+                {"color": "red", "value": 0},
+                {"color": "yellow", "value": 5},
+                {"color": "green", "value": 8}
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 3,
+        "title": "Healthy Services",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "count(up{job=~\".*service.*|api-gateway|eureka-service-registry\"} == 1)",
+            "legendFormat": "Healthy",
+            "refId": "A"
+          }
+        ],
+        "gridPos": {"h": 3, "w": 6, "x": 18, "y": 0},
+        "options": {
+          "reduceOptions": {
+            "values": false,
+            "calcs": ["lastNotNull"]
+          },
+          "textMode": "auto",
+          "colorMode": "value"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "thresholds"},
+            "thresholds": {
+              "steps": [
+                {"color": "red", "value": 0},
+                {"color": "yellow", "value": 5},
+                {"color": "green", "value": 8}
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 4,
+        "title": "HTTP Request Rate (req/sec)",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "sum(rate(http_server_requests_seconds_count{job=~\".*service.*|api-gateway\"}[5m])) by (job)",
+            "legendFormat": "{{job}}",
+            "refId": "A"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 6},
+        "yAxes": [
+          {"label": "Requests/sec", "min": 0, "show": true},
+          {"show": false}
+        ],
+        "xAxis": {"show": true},
+        "legend": {"show": true, "values": false, "min": false, "max": false, "current": false, "total": false, "avg": false}
+      },
+      {
+        "id": 5,
+        "title": "HTTP Response Times (95th percentile)",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, sum(rate(http_server_requests_seconds_bucket{job=~\".*service.*|api-gateway\"}[5m])) by (job, le))",
+            "legendFormat": "{{job}}",
+            "refId": "A"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 6},
+        "yAxes": [
+          {"label": "Response Time (seconds)", "min": 0, "show": true},
+          {"show": false}
+        ],
+        "xAxis": {"show": true},
+        "legend": {"show": true, "values": false, "min": false, "max": false, "current": false, "total": false, "avg": false}
+      },
+      {
+        "id": 6,
+        "title": "JVM Memory Usage (Heap)",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "jvm_memory_used_bytes{job=~\".*service.*|api-gateway|eureka-service-registry\", area=\"heap\"}",
+            "legendFormat": "{{job}} - Used",
+            "refId": "A"
+          },
+          {
+            "expr": "jvm_memory_max_bytes{job=~\".*service.*|api-gateway|eureka-service-registry\", area=\"heap\"}",
+            "legendFormat": "{{job}} - Max",
+            "refId": "B"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 14},
+        "yAxes": [
+          {"label": "Memory (MB)", "min": 0, "show": true},
+          {"show": false}
+        ],
+        "xAxis": {"show": true},
+        "legend": {"show": true, "values": false, "min": false, "max": false, "current": true, "total": false, "avg": false}
+      },
+      {
+        "id": 7,
+        "title": "System CPU Usage",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "system_cpu_usage{job=~\".*service.*|api-gateway|eureka-service-registry\"}",
+            "legendFormat": "{{job}}",
+            "refId": "A"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 14},
+        "yAxes": [
+          {"label": "CPU Usage %", "min": 0, "max": 1, "show": true},
+          {"show": false}
+        ],
+        "xAxis": {"show": true},
+        "legend": {"show": true, "values": false, "min": false, "max": false, "current": true, "total": false, "avg": false}
+      },
+      {
+        "id": 8,
+        "title": "HTTP Error Rate (4xx, 5xx)",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "sum(rate(http_server_requests_seconds_count{job=~\".*service.*|api-gateway\", status=~\"4..|5..\"}[5m])) by (job, status)",
+            "legendFormat": "{{job}} - {{status}}",
+            "refId": "A"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 24, "x": 0, "y": 22},
+        "yAxes": [
+          {"label": "Errors/sec", "min": 0, "show": true},
+          {"show": false}
+        ],
+        "xAxis": {"show": true},
+        "legend": {"show": true, "values": false, "min": false, "max": false, "current": false, "total": false, "avg": false}
+      },
+      {
+        "id": 9,
+        "title": "Correlation ID Requests (End-to-End Tracing)",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "sum(rate(http_server_requests_seconds_count{job=~\".*service.*|api-gateway\"}[5m])) by (job)",
+            "legendFormat": "{{job}} - All Requests",
+            "refId": "A"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 30},
+        "yAxes": [
+          {"label": "Requests/sec", "min": 0, "show": true},
+          {"show": false}
+        ],
+        "xAxis": {"show": true},
+        "legend": {"show": true, "values": false, "min": false, "max": false, "current": false, "total": false, "avg": false}
+      },
+      {
+        "id": 10,
+        "title": "Order Flow Simulation Metrics",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "sum(rate(http_server_requests_seconds_count{job=\"order-service\", uri=~\".*simulation.*\"}[5m]))",
+            "legendFormat": "Order Simulations",
+            "refId": "A"
+          },
+          {
+            "expr": "sum(rate(http_server_requests_seconds_count{job=\"inventory-service\", uri=~\".*simulation.*\"}[5m]))",
+            "legendFormat": "Inventory Checks",
+            "refId": "B"
+          },
+          {
+            "expr": "sum(rate(http_server_requests_seconds_count{job=\"payment-service\", uri=~\".*simulation.*\"}[5m]))",
+            "legendFormat": "Payment Processing",
+            "refId": "C"
+          },
+          {
+            "expr": "sum(rate(http_server_requests_seconds_count{job=\"notification-service\", uri=~\".*simulation.*\"}[5m]))",
+            "legendFormat": "Notifications",
+            "refId": "D"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 30},
+        "yAxes": [
+          {"label": "Requests/sec", "min": 0, "show": true},
+          {"show": false}
+        ],
+        "xAxis": {"show": true},
+        "legend": {"show": true, "values": false, "min": false, "max": false, "current": false, "total": false, "avg": false}
+      }
+    ],
+    "templating": {
+      "list": [
+        {
+          "name": "service",
+          "type": "query",
+          "query": "label_values(up{job=~\".*service.*|api-gateway|eureka-service-registry\"}, job)",
+          "refresh": 1,
+          "includeAll": true,
+          "multi": true,
+          "allValue": ".*"
+        }
+      ]
+    }
+  },
+  "overwrite": true
+}
