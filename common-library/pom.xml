@@ -77,6 +77,9 @@
 			<artifactId>opentelemetry-exporter-otlp</artifactId>
 		</dependency>
 		
+		<!-- Spring Boot 3.x includes OpenTelemetry auto-configuration -->
+		<!-- The micrometer-tracing-bridge-otel above handles the integration -->
+		
 		
 		<!-- ELK Logging -->
 		<dependency>

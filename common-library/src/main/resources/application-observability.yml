@@ -21,27 +21,10 @@ management:
     tags:
       application: ${spring.application.name}
       environment: dev
-
-# OpenTelemetry Tracing Configuration
-management.tracing:
-  sampling:
-    probability: 1.0
-
-# OpenTelemetry Configuration  
-otel:
-  exporter:
-    otlp:
-      endpoint: http://localhost:4318
-      protocol: http/protobuf
-  traces:
-    exporter: otlp
-  metrics:
-    exporter: otlp
-  resource:
-    attributes:
-      service.name: ${spring.application.name}
-      service.version: 1.0.0
-      deployment.environment: dev
+  # OpenTelemetry Tracing Configuration - Programmatic via OpenTelemetryConfig.java
+  tracing:
+    sampling:
+      probability: 1.0
 
 # Logging Configuration
 logging:
