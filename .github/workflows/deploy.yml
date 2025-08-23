@@ -36,5 +36,21 @@ jobs:
           ssh -i ~/.ssh/id_rsa ec2-user@3.111.144.135 << 'EOF'
             cd /opt/ecommerce
             git pull origin main
-            echo "Services deployment ready"
+            
+            # Build and deploy microservices
+            echo "🏗️ Building microservices..."
+            export JAVA_HOME=/usr/lib/jvm/java-17-amazon-corretto
+            
+            # Start Eureka Service Registry first
+            cd eureka-service-registry
+            nohup mvn spring-boot:run -Dspring.profiles.active=docker > ../logs/eureka.log 2>&1 &
+            echo "✅ Eureka Service Registry started"
+            
+            # Wait and start API Gateway
+            sleep 30
+            cd ../ecom-api-gateway  
+            nohup mvn spring-boot:run -Dspring.profiles.active=docker > ../logs/gateway.log 2>&1 &
+            echo "✅ API Gateway started"
+            
+            echo "🎯 Microservices deployment completed!"
           EOF
