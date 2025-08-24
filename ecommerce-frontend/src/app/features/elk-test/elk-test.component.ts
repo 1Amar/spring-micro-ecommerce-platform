@@ -1,6 +1,6 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { Observable, forkJoin, interval, of } from 'rxjs';
+import { Observable, forkJoin, interval, of, Subscription } from 'rxjs';
 import { catchError, delay, switchMap, tap } from 'rxjs/operators';
 import { environment } from '@environments/environment';
 import { ProductService } from '@core/services/product.service';
@@ -19,73 +19,162 @@ interface TestResult {
   duration?: number;
 }
 
+interface ServiceStatus {
+  name: string;
+  url: string;
+  status: 'online' | 'offline' | 'checking';
+  responseTime?: number;
+  lastChecked?: Date;
+  port: number;
+}
+
+interface MonitoringLink {
+  name: string;
+  description: string;
+  url: string;
+  icon: string;
+  color: string;
+}
+
 @Component({
   selector: 'app-elk-test',
   template: `
-    <div class="elk-test-container">
-      <div class="test-header">
-        <h2>🔍 ELK Stack Testing Dashboard</h2>
-        <p>Generate end-to-end correlation-tracked requests for Kibana analysis</p>
+    <!-- System Admin Dashboard -->
+    <div class="admin-dashboard">
+      <!-- Dashboard Header -->
+      <div class="dashboard-header">
+        <h1>🎛️ System Admin Dashboard</h1>
+        <p>Comprehensive monitoring and testing for microservices platform</p>
+        <div class="system-info">
+          <span class="info-badge">Environment: {{ environment.production ? 'Production' : 'Development' }}</span>
+          <span class="info-badge">Last Updated: {{ lastUpdate | date:'short' }}</span>
+        </div>
       </div>
 
-      <div class="test-controls">
-        <div class="control-group">
-          <button 
-            (click)="runSimpleTest()" 
-            [disabled]="isRunning"
-            class="btn btn-primary">
-            🚀 Simple Gateway Test
-          </button>
-          
-          <button 
-            (click)="runWorkingTest()" 
-            [disabled]="isRunning"
-            class="btn btn-info">
-            ✅ Working ELK Test
-          </button>
-          
-          <button 
-            (click)="runComplexOrderFlow()" 
-            [disabled]="isRunning"
-            class="btn btn-success">
-            🛒 Complex Order Flow Test
-          </button>
-          
-          <button 
-            (click)="runStressTest()" 
-            [disabled]="isRunning"
-            class="btn btn-warning">
-            ⚡ Stress Test (10 requests)
-          </button>
-          
-          <button 
-            (click)="runErrorTest()" 
-            [disabled]="isRunning"
-            class="btn btn-danger">
-            💥 Error Simulation Test
-          </button>
-          
-          <button 
-            (click)="runCorrelationIdTest()" 
-            [disabled]="isRunning"
-            class="btn btn-info">
-            🔗 Correlation ID Flow Test
-          </button>
+      <!-- Services Status Grid -->
+      <div class="services-status-section">
+        <h3>📊 Services Health Status</h3>
+        <div class="services-grid">
+          <div *ngFor="let service of services" 
+               class="service-card"
+               [ngClass]="'status-' + service.status">
+            <div class="service-header">
+              <h4>{{ service.name }}</h4>
+              <span class="status-indicator" [ngClass]="'indicator-' + service.status">
+                {{ service.status | titlecase }}
+              </span>
+            </div>
+            <div class="service-details">
+              <p><strong>Port:</strong> {{ service.port }}</p>
+              <p *ngIf="service.responseTime"><strong>Response Time:</strong> {{ service.responseTime }}ms</p>
+              <p *ngIf="service.lastChecked"><strong>Last Checked:</strong> {{ service.lastChecked | date:'HH:mm:ss' }}</p>
+            </div>
+            <button (click)="checkSingleService(service)" 
+                    [disabled]="service.status === 'checking'"
+                    class="btn btn-sm btn-outline-primary">
+              {{ service.status === 'checking' ? '⏳ Checking...' : '🔄 Check Health' }}
+            </button>
+          </div>
         </div>
-
-        <div class="search-info" *ngIf="currentCorrelationId">
-          <strong>Current Correlation ID:</strong> 
-          <code>{{ currentCorrelationId }}</code>
-          <button (click)="copyToClipboard(currentCorrelationId)" class="btn btn-sm btn-outline-secondary">
-            📋 Copy for Kibana
+        <div class="services-actions">
+          <button (click)="checkAllServices()" 
+                  [disabled]="isCheckingAll"
+                  class="btn btn-success">
+            {{ isCheckingAll ? '⏳ Checking All Services...' : '🚀 Check All Services Health' }}
           </button>
         </div>
       </div>
 
-      <div class="test-results">
-        <h3>Test Results ({{ testResults.length }})</h3>
-        <div class="results-list" *ngIf="testResults.length > 0">
-          <div *ngFor="let result of testResults; let i = index" 
+      <!-- Monitoring Tools Links -->
+      <div class="monitoring-section">
+        <h3>🔗 Monitoring & Observability Tools</h3>
+        <div class="monitoring-grid">
+          <div *ngFor="let link of monitoringLinks" class="monitoring-card" [style.border-left-color]="link.color">
+            <div class="monitoring-header">
+              <span class="monitoring-icon">{{ link.icon }}</span>
+              <h4>{{ link.name }}</h4>
+            </div>
+            <p class="monitoring-description">{{ link.description }}</p>
+            <a [href]="link.url" target="_blank" class="btn btn-outline-primary btn-sm">
+              🔗 Open {{ link.name }}
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Actions Panel -->
+      <div class="quick-actions-section">
+        <h3>🧪 System Testing & Actions</h3>
+        <div class="actions-grid">
+          <div class="action-card">
+            <h4>🔗 Correlation ID Testing</h4>
+            <p>Test end-to-end request flow across all microservices (WORKING STATE ALPHA)</p>
+            <button (click)="runCorrelationIdTest()" 
+                    [disabled]="isRunning"
+                    class="btn btn-primary">
+              {{ isRunning ? '⏳ Running Test...' : '🚀 Run Correlation ID Test' }}
+            </button>
+            <div class="correlation-info" *ngIf="currentCorrelationId">
+              <strong>Active Correlation ID:</strong>
+              <code class="correlation-id">{{ currentCorrelationId }}</code>
+              <button (click)="copyToClipboard(currentCorrelationId)" 
+                      class="btn btn-sm btn-outline-secondary">
+                📋 Copy for Kibana
+              </button>
+            </div>
+          </div>
+          
+          <div class="action-card">
+            <h4>🧹 System Maintenance</h4>
+            <p>Clear test results and reset dashboard state</p>
+            <button (click)="clearAllData()" class="btn btn-warning">
+              🗑️ Clear All Test Data
+            </button>
+          </div>
+          
+          <div class="action-card">
+            <h4>📈 Quick Metrics</h4>
+            <p>View basic system statistics</p>
+            <div class="metrics-display">
+              <div class="metric">
+                <span class="metric-value">{{ testResults.length }}</span>
+                <span class="metric-label">Total Tests</span>
+              </div>
+              <div class="metric">
+                <span class="metric-value">{{ getSuccessfulTests() }}</span>
+                <span class="metric-label">Successful</span>
+              </div>
+              <div class="metric">
+                <span class="metric-value">{{ getFailedTests() }}</span>
+                <span class="metric-label">Failed</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Test Results Section -->
+      <div class="test-results-section">
+        <div class="results-header">
+          <h3>📋 Test Results & Logs ({{ testResults.length }})</h3>
+          <div class="results-filters">
+            <button (click)="filterResults('all')" 
+                    [class.active]="currentFilter === 'all'"
+                    class="filter-btn">All</button>
+            <button (click)="filterResults('success')" 
+                    [class.active]="currentFilter === 'success'"
+                    class="filter-btn">Success</button>
+            <button (click)="filterResults('error')" 
+                    [class.active]="currentFilter === 'error'"
+                    class="filter-btn">Errors</button>
+            <button (click)="exportResults()" class="btn btn-sm btn-outline-info">
+              📄 Export Results
+            </button>
+          </div>
+        </div>
+        
+        <div class="results-list" *ngIf="getFilteredResults().length > 0">
+          <div *ngFor="let result of getFilteredResults(); let i = index" 
                class="result-item"
                [ngClass]="'result-' + result.status">
             
@@ -117,244 +206,107 @@ interface TestResult {
           </div>
         </div>
         
-        <div *ngIf="testResults.length === 0" class="no-results">
-          No test results yet. Click a test button to start generating ELK logs!
+        <div *ngIf="getFilteredResults().length === 0" class="no-results">
+          {{ testResults.length === 0 ? 'No test results yet. Run the correlation ID test to see results here!' : 'No results match the current filter.' }}
         </div>
       </div>
 
-      <div class="kibana-info">
-        <h3>🔍 How to Track Correlation ID Flow in Kibana</h3>
-        <ol>
-          <li>Open Kibana: <a href="http://localhost:5601" target="_blank">http://localhost:5601</a></li>
-          <li>Go to <strong>Discover</strong></li>
-          <li>Make sure index pattern is: <code>spring-boot-logs-*</code></li>
-          <li>Set time range to <strong>"Last 15 minutes"</strong></li>
-          <li><strong>Search for correlation ID:</strong> Copy any correlation ID from above and paste in search</li>
-          <li><strong>Filter by service:</strong> <code>springAppName: "ecom-order-service"</code> or <code>"inventory-service"</code> or <code>"payment-service"</code></li>
-          <li><strong>Sort by timestamp</strong> to see the request flow order</li>
-          <li><strong>Look for patterns:</strong> You should see the same correlation ID across multiple services</li>
-        </ol>
-        
-        <div style="margin-top: 15px; padding: 10px; background: #fff3cd; border-radius: 4px;">
-          <strong>🎯 What to Look For:</strong><br>
-          • Same correlation ID appearing in order-service, inventory-service, and payment-service logs<br>
-          • Request flow: Gateway → Order Service → Inventory Service → Payment Service<br>
-          • Each service should log the received correlation ID<br>
+      <!-- Troubleshooting Guide -->
+      <div class="troubleshooting-section">
+        <h3>🔍 Troubleshooting & Analysis Guide</h3>
+        <div class="guide-grid">
+          <div class="guide-card">
+            <h4>📊 Kibana Log Analysis</h4>
+            <ol>
+              <li>Search for correlation ID: <code>{{ currentCorrelationId || 'your-correlation-id' }}</code></li>
+              <li>Filter by service: <code>springAppName: "ecom-order-service"</code></li>
+              <li>Sort by timestamp to see request flow</li>
+              <li>Look for same correlation ID across multiple services</li>
+            </ol>
+          </div>
+          
+          <div class="guide-card">
+            <h4>🔗 Jaeger Trace Analysis</h4>
+            <ol>
+              <li>Search by correlation ID or trace ID</li>
+              <li>View service dependency graph</li>
+              <li>Analyze request latency breakdown</li>
+              <li>Identify bottlenecks and errors</li>
+            </ol>
+          </div>
+          
+          <div class="guide-card">
+            <h4>📈 Grafana Metrics</h4>
+            <ol>
+              <li>Check service health dashboards</li>
+              <li>Monitor request rates and response times</li>
+              <li>View error rates and success rates</li>
+              <li>Analyze system resource usage</li>
+            </ol>
+          </div>
         </div>
       </div>
     </div>
   `,
-  styles: [`
-    .elk-test-container {
-      padding: 20px;
-      max-width: 1200px;
-      margin: 0 auto;
-    }
-
-    .test-header {
-      text-align: center;
-      margin-bottom: 30px;
-      padding: 20px;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
-      border-radius: 10px;
-    }
-
-    .test-controls {
-      margin-bottom: 30px;
-    }
-
-    .control-group {
-      display: flex;
-      gap: 15px;
-      margin-bottom: 20px;
-      flex-wrap: wrap;
-    }
-
-    .btn {
-      padding: 12px 24px;
-      border: none;
-      border-radius: 6px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.3s ease;
-    }
-
-    .btn:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
-
-    .btn-primary { background: #007bff; color: white; }
-    .btn-success { background: #28a745; color: white; }
-    .btn-warning { background: #ffc107; color: #212529; }
-    .btn-danger { background: #dc3545; color: white; }
-    .btn-outline-secondary { 
-      background: transparent; 
-      border: 1px solid #6c757d; 
-      color: #6c757d; 
-      padding: 4px 8px;
-      font-size: 12px;
-    }
-
-    .search-info {
-      padding: 15px;
-      background: #e7f3ff;
-      border-radius: 6px;
-      border-left: 4px solid #007bff;
-    }
-
-    .search-info code {
-      background: #f8f9fa;
-      padding: 2px 6px;
-      border-radius: 3px;
-      font-family: 'Courier New', monospace;
-    }
-
-    .test-results {
-      margin-bottom: 30px;
-    }
-
-    .results-list {
-      max-height: 600px;
-      overflow-y: auto;
-      border: 1px solid #dee2e6;
-      border-radius: 6px;
-    }
-
-    .result-item {
-      padding: 15px;
-      border-bottom: 1px solid #dee2e6;
-      transition: background-color 0.3s ease;
-    }
-
-    .result-item:hover {
-      background-color: #f8f9fa;
-    }
-
-    .result-success { border-left: 4px solid #28a745; }
-    .result-error { border-left: 4px solid #dc3545; }
-    .result-running { border-left: 4px solid #ffc107; }
-
-    .result-header {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 8px;
-      flex-wrap: wrap;
-    }
-
-    .step-number {
-      background: #6c757d;
-      color: white;
-      border-radius: 50%;
-      width: 24px;
-      height: 24px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 12px;
-      font-weight: bold;
-    }
-
-    .service-badge {
-      background: #e9ecef;
-      color: #495057;
-      padding: 2px 8px;
-      border-radius: 12px;
-      font-size: 12px;
-      font-weight: 500;
-    }
-
-    .status-badge {
-      padding: 2px 8px;
-      border-radius: 12px;
-      font-size: 12px;
-      font-weight: 500;
-    }
-
-    .status-success { background: #d4edda; color: #155724; }
-    .status-error { background: #f8d7da; color: #721c24; }
-    .status-running { background: #fff3cd; color: #856404; }
-
-    .timestamp, .duration {
-      font-size: 12px;
-      color: #6c757d;
-    }
-
-    .correlation-id {
-      margin-bottom: 8px;
-      font-size: 14px;
-    }
-
-    .correlation-id code {
-      background: #f8f9fa;
-      padding: 2px 6px;
-      border-radius: 3px;
-      font-family: 'Courier New', monospace;
-      color: #e83e8c;
-    }
-
-    .response-json {
-      background: #f8f9fa;
-      padding: 10px;
-      border-radius: 4px;
-      font-size: 12px;
-      max-height: 200px;
-      overflow-y: auto;
-      margin-top: 8px;
-    }
-
-    .error-message {
-      color: #dc3545;
-      font-weight: 500;
-    }
-
-    .no-results {
-      text-align: center;
-      padding: 40px;
-      color: #6c757d;
-      font-style: italic;
-    }
-
-    .kibana-info {
-      background: #f8f9fa;
-      padding: 20px;
-      border-radius: 6px;
-      border-left: 4px solid #17a2b8;
-    }
-
-    .kibana-info ol {
-      margin: 10px 0;
-      padding-left: 20px;
-    }
-
-    .kibana-info li {
-      margin-bottom: 8px;
-    }
-
-    .kibana-info code {
-      background: #e9ecef;
-      padding: 2px 6px;
-      border-radius: 3px;
-      font-family: 'Courier New', monospace;
-    }
-
-    .kibana-info a {
-      color: #007bff;
-      text-decoration: none;
-    }
-
-    .kibana-info a:hover {
-      text-decoration: underline;
-    }
-  `]
+  styleUrls: ['./elk-test.component.scss']
 })
-export class ELKTestComponent implements OnInit {
+export class ELKTestComponent implements OnInit, OnDestroy {
   testResults: TestResult[] = [];
   isRunning = false;
   currentCorrelationId = '';
   showDetails: boolean[] = [];
+  lastUpdate = new Date();
+  environment = environment;
+  
+  // Service status tracking
+  services: ServiceStatus[] = [
+    { name: 'API Gateway', url: '/public/health', status: 'offline', port: 8081 },
+    { name: 'Order Service', url: '/order/health', status: 'offline', port: 8084 },
+    { name: 'Inventory Service', url: '/inventory/health', status: 'offline', port: 8083 },
+    { name: 'Payment Service', url: '/payments/health', status: 'offline', port: 8085 },
+    { name: 'Product Service', url: '/products/health', status: 'offline', port: 8082 },
+    { name: 'Notification Service', url: '/notifications/health', status: 'offline', port: 8086 }
+  ];
+  
+  isCheckingAll = false;
+  
+  // Monitoring tools links
+  monitoringLinks: MonitoringLink[] = [
+    {
+      name: 'Kibana',
+      description: 'Search and analyze logs across all services',
+      url: environment.production ? 'https://monitor.amars.shop:5601' : 'http://localhost:5601',
+      icon: '📊',
+      color: '#00BCD4'
+    },
+    {
+      name: 'Jaeger',
+      description: 'Distributed tracing and service dependency mapping',
+      url: environment.production ? 'https://monitor.amars.shop/jaeger' : 'http://localhost:16686',
+      icon: '🔗',
+      color: '#FF9800'
+    },
+    {
+      name: 'Grafana',
+      description: 'Metrics dashboards and system monitoring',
+      url: environment.production ? 'https://monitor.amars.shop/grafana' : 'http://localhost:3000',
+      icon: '📈',
+      color: '#FF5722'
+    },
+    {
+      name: 'Prometheus',
+      description: 'Raw metrics and system health data',
+      url: environment.production ? 'https://monitor.amars.shop:9090' : 'http://localhost:9090',
+      icon: '⚡',
+      color: '#4CAF50'
+    }
+  ];
+  
+  // Filtering
+  currentFilter: 'all' | 'success' | 'error' = 'all';
+  
+  // Auto-refresh subscription
+  private autoRefreshSubscription?: Subscription;
 
   constructor(
     private http: HttpClient,
@@ -365,9 +317,149 @@ export class ELKTestComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    console.log('🔍 ELK Test Component initialized');
+    console.log('🎛️ System Admin Dashboard initialized');
+    this.checkAllServices();
+    this.startAutoRefresh();
   }
 
+  ngOnDestroy(): void {
+    this.stopAutoRefresh();
+  }
+
+  // Service Health Checking Methods
+  async checkAllServices(): Promise<void> {
+    this.isCheckingAll = true;
+    const checkPromises = this.services.map(service => this.checkSingleService(service));
+    await Promise.all(checkPromises);
+    this.isCheckingAll = false;
+    this.lastUpdate = new Date();
+  }
+
+  async checkSingleService(service: ServiceStatus): Promise<void> {
+    service.status = 'checking';
+    const startTime = Date.now();
+
+    try {
+      const response = await this.http.get(`${environment.apiUrl}${service.url}`)
+        .pipe(
+          catchError(() => of({ status: 'error' }))
+        ).toPromise();
+      
+      const responseTime = Date.now() - startTime;
+      service.status = 'online';
+      service.responseTime = responseTime;
+      service.lastChecked = new Date();
+      
+    } catch (error) {
+      service.status = 'offline';
+      service.responseTime = undefined;
+      service.lastChecked = new Date();
+    }
+  }
+
+  // Auto-refresh services every 30 seconds
+  startAutoRefresh(): void {
+    this.autoRefreshSubscription = interval(30000).subscribe(() => {
+      if (!this.isCheckingAll && !this.isRunning) {
+        this.checkAllServices();
+      }
+    });
+  }
+
+  stopAutoRefresh(): void {
+    if (this.autoRefreshSubscription) {
+      this.autoRefreshSubscription.unsubscribe();
+    }
+  }
+
+  // Test Results Filtering
+  filterResults(filter: 'all' | 'success' | 'error'): void {
+    this.currentFilter = filter;
+  }
+
+  getFilteredResults(): TestResult[] {
+    if (this.currentFilter === 'all') {
+      return this.testResults;
+    }
+    return this.testResults.filter(result => result.status === this.currentFilter);
+  }
+
+  // Metrics Calculation
+  getSuccessfulTests(): number {
+    return this.testResults.filter(result => result.status === 'success').length;
+  }
+
+  getFailedTests(): number {
+    return this.testResults.filter(result => result.status === 'error').length;
+  }
+
+  // System Actions
+  clearAllData(): void {
+    this.testResults = [];
+    this.showDetails = [];
+    this.currentCorrelationId = '';
+    this.lastUpdate = new Date();
+  }
+
+  exportResults(): void {
+    const exportData = {
+      timestamp: new Date().toISOString(),
+      totalTests: this.testResults.length,
+      successfulTests: this.getSuccessfulTests(),
+      failedTests: this.getFailedTests(),
+      environment: environment.production ? 'production' : 'development',
+      results: this.testResults
+    };
+
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `elk-test-results-${new Date().toISOString().split('T')[0]}.json`;
+    link.click();
+    window.URL.revokeObjectURL(url);
+  }
+
+  // Working Correlation ID Test (our alpha baseline)
+  async runCorrelationIdTest(): Promise<void> {
+    this.isRunning = true;
+    this.currentCorrelationId = this.generateCorrelationId();
+    this.correlationIdService.setCorrelationId(this.currentCorrelationId);
+    this.clearResults();
+
+    try {
+      console.log('🔗 Starting Correlation ID Flow Test with ID:', this.currentCorrelationId);
+      
+      // Step 1: Test Complete Order Simulation via Gateway (this propagates correlation ID properly)
+      await this.executeStep(
+        'Complete Order Simulation Flow',
+        'order-simulation-controller',
+        () => this.http.post(`${environment.apiUrl}/simulation/complete-order-flow`, {})
+      );
+
+      // Step 2: Test Individual Services for Correlation ID Verification
+      await this.executeStep(
+        'Inventory Service Direct Call',
+        'inventory-service',
+        () => this.http.get(`${environment.apiUrl}/inventory/check/PRODUCT-TEST`)
+      );
+
+      await this.executeStep(
+        'Payment Service Health Check',
+        'payment-service',
+        () => this.http.get(`${environment.apiUrl}/payments/health`)
+      );
+
+      console.log('🔗 Correlation ID Flow Test completed. Check Kibana for logs with correlation ID:', this.currentCorrelationId);
+
+    } catch (error) {
+      console.error('Correlation ID test failed:', error);
+    } finally {
+      this.isRunning = false;
+    }
+  }
+
+  // Legacy test methods (keep for backward compatibility but not used in UI)
   async runSimpleTest(): Promise<void> {
     this.isRunning = true;
     this.currentCorrelationId = this.generateCorrelationId();
@@ -524,61 +616,6 @@ export class ELKTestComponent implements OnInit {
 
     } catch (error) {
       console.error('Error test completed (expected):', error);
-    } finally {
-      this.isRunning = false;
-    }
-  }
-
-  async runCorrelationIdTest(): Promise<void> {
-    this.isRunning = true;
-    this.currentCorrelationId = this.generateCorrelationId();
-    this.correlationIdService.setCorrelationId(this.currentCorrelationId);
-    this.clearResults();
-
-    try {
-      console.log('🔗 Starting Correlation ID Flow Test with ID:', this.currentCorrelationId);
-      
-      // Step 1: Test Order Simulation (Order Service → Inventory Service → Payment Service)
-      await this.executeStep(
-        'Order Simulation Chain (3 Services)',
-        'order-service-chain',
-        () => this.http.post(`${environment.apiUrl}/order/simulate`, {})
-      );
-
-      // Step 2: Test Complete Order Simulation via Gateway
-      await this.executeStep(
-        'Complete Order Simulation Flow',
-        'order-simulation-controller',
-        () => this.http.post(`${environment.apiUrl}/simulation/complete-order-flow`, {})
-      );
-
-      // Step 3: Test Individual Services for Correlation ID Verification
-      await this.executeStep(
-        'Inventory Service Direct Call',
-        'inventory-service',
-        () => this.http.get(`${environment.apiUrl}/inventory/check/PRODUCT-TEST`)
-      );
-
-      await this.executeStep(
-        'Payment Service Health Check',
-        'payment-service',
-        () => this.http.get(`${environment.apiUrl}/payments/health`)
-      );
-
-      // Step 4: Test multiple correlation IDs for comparison
-      this.currentCorrelationId = this.generateCorrelationId();
-      this.correlationIdService.setCorrelationId(this.currentCorrelationId);
-      
-      await this.executeStep(
-        'Second Order Simulation (Different Correlation ID)',
-        'order-service-chain-2',
-        () => this.http.post(`${environment.apiUrl}/order/simulate`, {})
-      );
-
-      console.log('🔗 Correlation ID Flow Test completed. Check Kibana for logs with correlation IDs!');
-
-    } catch (error) {
-      console.error('Correlation ID test failed:', error);
     } finally {
       this.isRunning = false;
     }

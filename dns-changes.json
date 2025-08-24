@@ -1,0 +1,69 @@
+{
+  "Changes": [
+    {
+      "Action": "UPSERT",
+      "ResourceRecordSet": {
+        "Name": "api.amars.shop",
+        "Type": "A",
+        "TTL": 300,
+        "ResourceRecords": [
+          {
+            "Value": "3.111.125.143"
+          }
+        ]
+      }
+    },
+    {
+      "Action": "UPSERT", 
+      "ResourceRecordSet": {
+        "Name": "auth.amars.shop",
+        "Type": "A", 
+        "TTL": 300,
+        "ResourceRecords": [
+          {
+            "Value": "3.111.125.143"
+          }
+        ]
+      }
+    },
+    {
+      "Action": "UPSERT",
+      "ResourceRecordSet": {
+        "Name": "monitor.amars.shop", 
+        "Type": "A",
+        "TTL": 300,
+        "ResourceRecords": [
+          {
+            "Value": "3.111.125.143"
+          }
+        ]
+      }
+    },
+    {
+      "Action": "UPSERT",
+      "ResourceRecordSet": {
+        "Name": "app.amars.shop",
+        "Type": "A", 
+        "TTL": 300,
+        "ResourceRecords": [
+          {
+            "Value": "13.234.184.172"
+          }
+        ]
+      }
+    },
+    {
+      "Action": "UPSERT",
+      "ResourceRecordSet": {
+        "Name": "amars.shop",
+        "Type": "A",
+        "TTL": 300, 
+        "ResourceRecords": [
+          {
+            "Value": "3.111.125.143"
+          }
+        ]
+      }
+    }
+  ]
+}

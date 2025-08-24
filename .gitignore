@@ -82,3 +82,17 @@ application-*.yml
 # Logs
 logs/
 *.log.*
+
+# Documentation and guides
+guides-notes-images/
+
+# AWS sensitive files
+aws-deployment/keypair/
+aws-deployment/terraform/.terraform/
+aws-deployment/terraform/terraform.tfstate*
+aws-deployment/terraform/*.pem
+aws-deployment/terraform/*.ppk
+*.exe
+
+# Claude Code settings
+.claude/
