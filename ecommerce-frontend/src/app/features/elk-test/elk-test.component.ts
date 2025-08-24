@@ -474,10 +474,10 @@ export class ELKTestComponent implements OnInit, OnDestroy {
         () => this.checkHealth('/gateway')
       );
 
-      // Test 2: Get Categories (this should work via gateway)
+      // Test 2: Get Categories (this should work via product-service)
       await this.executeStep(
         'Get Product Categories',
-        'catalog-service',
+        'product-service',
         () => this.productService.getCategories()
       );
 
@@ -523,9 +523,9 @@ export class ELKTestComponent implements OnInit, OnDestroy {
       );
 
       await this.executeStep(
-        'Catalog Service Test',
-        'catalog-service',
-        () => this.http.get(`${environment.apiUrl}/catalog/categories`)
+        'Product Service Categories Test',
+        'product-service',
+        () => this.http.get(`${environment.apiUrl}/products/categories`)
       );
 
     } catch (error) {

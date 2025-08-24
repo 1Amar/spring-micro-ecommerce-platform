@@ -88,14 +88,6 @@ echo Notification Service starting...
 REM Wait a bit before starting next service
 timeout /t 3 /nobreak >nul
 
-REM Start Catalog Service (port 8089)
-echo Starting Catalog Service...
-cd "%ROOT_DIR%catalog-service"
-start "Catalog Service" cmd /c "mvn spring-boot:run"
-echo Catalog Service starting...
-
-REM Wait a bit before starting next service
-timeout /t 3 /nobreak >nul
 
 REM Start Search Service (port 8090)
 echo Starting Search Service...
@@ -114,7 +106,6 @@ echo - Inventory Service: http://localhost:8084
 echo - Product Service: http://localhost:8085
 echo - Payment Service: http://localhost:8086
 echo - Notification Service: http://localhost:8087
-echo - Catalog Service: http://localhost:8089
 echo - Search Service: http://localhost:8090
 echo.
 echo Infrastructure URLs:

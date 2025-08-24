@@ -17,7 +17,6 @@
   </properties>
 
   <modules>
-    <module>catalog-service</module>
     <module>common-library</module>
     <module>ecom-api-gateway</module>
     <module>ecom-order-service</module>

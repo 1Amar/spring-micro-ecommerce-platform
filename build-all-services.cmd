@@ -4,7 +4,7 @@ echo Building All Microservices
 echo ================================
 
 echo.
-echo [1/11] Building common-library...
+echo [1/10] Building common-library...
 cd /d "C:\Java-workspace\spring-micro-ecommerce-platform\common-library"
 call mvn clean install -q
 if errorlevel 1 (
@@ -14,7 +14,7 @@ if errorlevel 1 (
 echo ✓ common-library built successfully
 
 echo.
-echo [2/11] Building eureka-service-registry...
+echo [2/10] Building eureka-service-registry...
 cd /d "C:\Java-workspace\spring-micro-ecommerce-platform\eureka-service-registry"
 call mvn clean compile -q
 if errorlevel 1 (
@@ -24,7 +24,7 @@ if errorlevel 1 (
 echo ✓ eureka-service-registry built successfully
 
 echo.
-echo [3/11] Building ecom-api-gateway...
+echo [3/10] Building ecom-api-gateway...
 cd /d "C:\Java-workspace\spring-micro-ecommerce-platform\ecom-api-gateway"
 call mvn clean compile -q
 if errorlevel 1 (
@@ -34,7 +34,7 @@ if errorlevel 1 (
 echo ✓ ecom-api-gateway built successfully
 
 echo.
-echo [4/11] Building ecom-order-service...
+echo [4/10] Building ecom-order-service...
 cd /d "C:\Java-workspace\spring-micro-ecommerce-platform\ecom-order-service"
 call mvn clean compile -q
 if errorlevel 1 (
@@ -44,7 +44,7 @@ if errorlevel 1 (
 echo ✓ ecom-order-service built successfully
 
 echo.
-echo [5/11] Building inventory-service...
+echo [5/10] Building inventory-service...
 cd /d "C:\Java-workspace\spring-micro-ecommerce-platform\inventory-service"
 call mvn clean compile -q
 if errorlevel 1 (
@@ -54,7 +54,7 @@ if errorlevel 1 (
 echo ✓ inventory-service built successfully
 
 echo.
-echo [6/11] Building product-service...
+echo [6/10] Building product-service...
 cd /d "C:\Java-workspace\spring-micro-ecommerce-platform\product-service"
 call mvn clean compile -q
 if errorlevel 1 (
@@ -64,7 +64,7 @@ if errorlevel 1 (
 echo ✓ product-service built successfully
 
 echo.
-echo [7/11] Building payment-service...
+echo [7/10] Building payment-service...
 cd /d "C:\Java-workspace\spring-micro-ecommerce-platform\payment-service"
 call mvn clean compile -q
 if errorlevel 1 (
@@ -74,7 +74,7 @@ if errorlevel 1 (
 echo ✓ payment-service built successfully
 
 echo.
-echo [8/11] Building notification-service...
+echo [8/10] Building notification-service...
 cd /d "C:\Java-workspace\spring-micro-ecommerce-platform\notification-service"
 call mvn clean compile -q
 if errorlevel 1 (
@@ -84,7 +84,7 @@ if errorlevel 1 (
 echo ✓ notification-service built successfully
 
 echo.
-echo [9/11] Building notification-worker...
+echo [9/10] Building notification-worker...
 cd /d "C:\Java-workspace\spring-micro-ecommerce-platform\notification-worker"
 call mvn clean compile -q
 if errorlevel 1 (
@@ -94,17 +94,7 @@ if errorlevel 1 (
 echo ✓ notification-worker built successfully
 
 echo.
-echo [10/11] Building catalog-service...
-cd /d "C:\Java-workspace\spring-micro-ecommerce-platform\catalog-service"
-call mvn clean compile -q
-if errorlevel 1 (
-    echo ERROR: Failed to build catalog-service
-    exit /b 1
-)
-echo ✓ catalog-service built successfully
-
-echo.
-echo [11/11] Building search-service...
+echo [10/10] Building search-service...
 cd /d "C:\Java-workspace\spring-micro-ecommerce-platform\search-service"
 call mvn clean compile -q
 if errorlevel 1 (

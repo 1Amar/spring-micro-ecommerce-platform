@@ -49,10 +49,6 @@ spring:
           predicates:
             - Path=/api/v1/notifications/**
             
-        - id: catalog-service
-          uri: lb://catalog-service
-          predicates:
-            - Path=/api/v1/catalog/**
             
         - id: search-service
           uri: lb://search-service
