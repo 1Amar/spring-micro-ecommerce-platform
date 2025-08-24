@@ -1,56 +1,59 @@
-name: Deploy to AWS
+# DISABLED: AWS Infrastructure destroyed - workflow suspended
+# This workflow is disabled because AWS instances were destroyed
+# Re-enable when new infrastructure is deployed
 
-on:
-  push:
-    branches: [ main ]
-  workflow_dispatch:
+# name: Deploy to AWS
+# on:
+#   push:
+#     branches: [ main ]
+#   workflow_dispatch:
 
-jobs:
-  deploy:
-    name: Deploy to AWS
-    runs-on: ubuntu-latest
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        
-      - name: Setup SSH
-        run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.EC2_PRIVATE_KEY }}" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan -H 13.235.42.64 >> ~/.ssh/known_hosts
-          ssh-keyscan -H 3.111.144.135 >> ~/.ssh/known_hosts
-          
-      - name: Deploy to servers
-        run: |
-          # Deploy to Gateway Server
-          ssh -i ~/.ssh/id_rsa ec2-user@13.235.42.64 << 'EOF'
-            cd /opt/ecommerce
-            git pull origin main
-            sudo docker-compose -f Docker/docker-compose.yml up -d postgres keycloak redis prometheus grafana jaeger
-            sudo docker ps
-          EOF
-          
-          # Deploy to Services Server  
-          ssh -i ~/.ssh/id_rsa ec2-user@3.111.144.135 << 'EOF'
-            cd /opt/ecommerce
-            git pull origin main
-            
-            # Build and deploy microservices
-            echo "🏗️ Building microservices..."
-            export JAVA_HOME=/usr/lib/jvm/java-17-amazon-corretto
-            
-            # Start Eureka Service Registry first
-            cd eureka-service-registry
-            nohup mvn spring-boot:run -Dspring.profiles.active=docker > ../logs/eureka.log 2>&1 &
-            echo "✅ Eureka Service Registry started"
-            
-            # Wait and start API Gateway
-            sleep 30
-            cd ../ecom-api-gateway  
-            nohup mvn spring-boot:run -Dspring.profiles.active=docker > ../logs/gateway.log 2>&1 &
-            echo "✅ API Gateway started"
-            
-            echo "🎯 Microservices deployment completed!"
-          EOF
+# jobs:
+#   deploy:
+#     name: Deploy to AWS
+#     runs-on: ubuntu-latest
+#     
+#     steps:
+#       - name: Checkout code
+#         uses: actions/checkout@v4
+#         
+#       - name: Setup SSH
+#         run: |
+#           mkdir -p ~/.ssh
+#           echo "${{ secrets.EC2_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+#           chmod 600 ~/.ssh/id_rsa
+#           ssh-keyscan -H 13.235.42.64 >> ~/.ssh/known_hosts
+#           ssh-keyscan -H 3.111.144.135 >> ~/.ssh/known_hosts
+#           
+#       - name: Deploy to servers
+#         run: |
+#           # Deploy to Gateway Server
+#           ssh -i ~/.ssh/id_rsa ec2-user@13.235.42.64 << 'EOF'
+#             cd /opt/ecommerce
+#             git pull origin main
+#             sudo docker-compose -f Docker/docker-compose.yml up -d postgres keycloak redis prometheus grafana jaeger
+#             sudo docker ps
+#           EOF
+#           
+#           # Deploy to Services Server  
+#           ssh -i ~/.ssh/id_rsa ec2-user@3.111.144.135 << 'EOF'
+#             cd /opt/ecommerce
+#             git pull origin main
+#             
+#             # Build and deploy microservices
+#             echo "🏗️ Building microservices..."
+#             export JAVA_HOME=/usr/lib/jvm/java-17-amazon-corretto
+#             
+#             # Start Eureka Service Registry first
+#             cd eureka-service-registry
+#             nohup mvn spring-boot:run -Dspring.profiles.active=docker > ../logs/eureka.log 2>&1 &
+#             echo "✅ Eureka Service Registry started"
+#             
+#             # Wait and start API Gateway
+#             sleep 30
+#             cd ../ecom-api-gateway  
+#             nohup mvn spring-boot:run -Dspring.profiles.active=docker > ../logs/gateway.log 2>&1 &
+#             echo "✅ API Gateway started"
+#             
+#             echo "🎯 Microservices deployment completed!"
+#           EOF
