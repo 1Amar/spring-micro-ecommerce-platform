@@ -11,6 +11,7 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
       - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+      - ./init-pg_hba.sh:/docker-entrypoint-initdb.d/init-pg_hba.sh
     healthcheck:
       test: ["CMD", "pg_isready", "-U", "devuser"]
       interval: 10s

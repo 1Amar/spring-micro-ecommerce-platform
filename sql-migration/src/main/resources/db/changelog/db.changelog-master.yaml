@@ -1,0 +1,22 @@
+databaseChangeLog:
+  - include:
+      file: sql/001-create-categories-table.sql
+      relativeToChangelogFile: true
+  - include:
+      file: sql/002-create-products-table.sql
+      relativeToChangelogFile: true
+  - include:
+      file: sql/003-create-product-images-table.sql
+      relativeToChangelogFile: true
+  - include:
+      file: sql/004-create-product-attributes-table.sql
+      relativeToChangelogFile: true
+  - include:
+      file: sql/005-add-foreign-key-constraints.sql
+      relativeToChangelogFile: true
+  - include:
+      file: sql/006-create-indexes.sql
+      relativeToChangelogFile: true
+  - include:
+      file: sql/007-insert-sample-data.sql
+      relativeToChangelogFile: true

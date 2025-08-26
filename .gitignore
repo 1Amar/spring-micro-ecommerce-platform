@@ -96,3 +96,6 @@ aws-deployment/terraform/*.ppk
 
 # Claude Code settings
 .claude/
+
+# AI Development Team Agent
+ai-dev-team-agent/
