@@ -17,6 +17,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/categories")
@@ -173,5 +174,28 @@ public class CategoryController {
         logger.info("Updating display order for category ID: {} to: {}", id, displayOrder);
         categoryService.updateDisplayOrder(id, displayOrder);
         return ResponseEntity.noContent().build();
+    }
+    
+    /**
+     * Get category count
+     */
+    @GetMapping("/count")
+    public ResponseEntity<Map<String, Object>> getCategoryCount() {
+        logger.info("Fetching category count");
+        try {
+            List<CategoryDto> categories = categoryService.getParentCategories();
+            return ResponseEntity.ok(Map.of(
+                "status", "success",
+                "totalCategories", categories.size(),
+                "message", "Category count retrieved successfully"
+            ));
+        } catch (Exception e) {
+            logger.error("Error fetching category count", e);
+            return ResponseEntity.status(500).body(Map.of(
+                "status", "error", 
+                "message", "Unable to fetch category count",
+                "error", e.getMessage()
+            ));
+        }
     }
 }

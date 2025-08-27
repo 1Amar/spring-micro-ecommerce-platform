@@ -15,6 +15,11 @@ public interface ProductMapperMS {
     // Product mappings
     @Mapping(source = "category.id", target = "categoryId")
     @Mapping(source = "category.name", target = "categoryName")
+    @Mapping(source = "imageUrl", target = "imageUrl")
+    @Mapping(source = "stars", target = "stars") 
+    @Mapping(source = "reviewCount", target = "reviewCount")
+    @Mapping(source = "boughtInLastMonth", target = "boughtInLastMonth")
+    @Mapping(source = "isBestSeller", target = "isBestSeller")
     @Mapping(target = "inStock", expression = "java(product.isInStock())")
     @Mapping(target = "lowStock", expression = "java(product.isLowStock())")
     @Mapping(target = "onSale", expression = "java(product.isOnSale())")

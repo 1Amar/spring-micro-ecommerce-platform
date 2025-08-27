@@ -1,23 +1,41 @@
+import { Page } from './page.model';
+
+// Updated to match backend ProductDto
 export interface Product {
-  id: string;
+  id: number;
   name: string;
   description: string;
-  price: number;
-  originalPrice?: number;
-  discount?: number;
-  imageUrl: string;
-  images?: string[];
-  category: string;
-  subcategory?: string;
-  brand: string;
   sku: string;
-  tags?: string[];
-  specifications?: { [key: string]: string };
-  rating: number;
-  reviewCount: number;
-  availability: ProductAvailability;
-  createdAt: Date;
-  updatedAt: Date;
+  slug: string;
+  price: number;
+  compareAtPrice?: number;
+  cost?: number;
+  stockQuantity: number;
+  lowStockThreshold: number;
+  trackInventory: boolean;
+  isActive: boolean;
+  isFeatured: boolean;
+  weight?: number;
+  dimensions?: string;
+  brand: string;
+  metaTitle?: string;
+  metaDescription?: string;
+  tags?: string;
+  sortOrder: number;
+  categoryId: number;
+  categoryName: string;
+  inStock: boolean;
+  lowStock: boolean;
+  onSale: boolean;
+  savingsAmount?: number;
+  savingsPercentage?: number;
+  stars?: number;
+  reviewCount?: number;
+  imageUrl?: string;
+  boughtInLastMonth?: number;
+  isBestSeller?: boolean;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface ProductAvailability {
@@ -27,13 +45,17 @@ export interface ProductAvailability {
   lowStockThreshold?: number;
 }
 
+// Updated to match backend CategoryDto  
 export interface ProductCategory {
-  id: string;
+  id: number;
   name: string;
+  slug: string;
   description?: string;
-  parentId?: string;
-  children?: ProductCategory[];
-  imageUrl?: string;
+  parentId?: number;
+  displayOrder: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface ProductReview {
@@ -60,10 +82,5 @@ export interface ProductSearchFilter {
   sortOrder?: 'asc' | 'desc';
 }
 
-export interface ProductSearchResult {
-  products: Product[];
-  totalItems: number;
-  totalPages: number;
-  currentPage: number;
-  filters: ProductSearchFilter;
-}
+// Use Page interface for search results
+export type ProductSearchResult = Page<Product>;

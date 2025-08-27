@@ -66,8 +66,8 @@
         
         <div class="product-image">
           <img [src]="getProductImageUrl(product)" [alt]="product.name" loading="lazy">
-          <div class="product-badge" *ngIf="product.discount">
-            <mat-chip color="accent">{{ product.discount }}% OFF</mat-chip>
+          <div class="product-badge" *ngIf="product.onSale">
+            <mat-chip color="accent">{{ product.savingsPercentage | number:'1.0-0' }}% OFF</mat-chip>
           </div>
         </div>
         
@@ -78,7 +78,7 @@
           <div class="product-rating">
             <div class="stars">
               <mat-icon *ngFor="let star of [1,2,3,4,5]" 
-                       [class.filled]="star <= product.rating">
+                       [class.filled]="star <= (product.stars || 0)">
                 star
               </mat-icon>
             </div>
@@ -87,8 +87,8 @@
           
           <div class="product-pricing">
             <span class="current-price">{{ formatPrice(product.price) }}</span>
-            <span class="original-price" *ngIf="product.originalPrice && product.originalPrice > product.price">
-              {{ formatPrice(product.originalPrice) }}
+            <span class="original-price" *ngIf="product.compareAtPrice && product.compareAtPrice > product.price">
+              {{ formatPrice(product.compareAtPrice) }}
             </span>
           </div>
         </mat-card-content>

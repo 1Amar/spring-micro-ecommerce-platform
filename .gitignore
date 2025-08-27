@@ -100,3 +100,7 @@ aws-deployment/terraform/*.ppk
 
 # AI Development Team Agent
 ai-dev-team-agent/
+
+# Notes and guides
+/notes-guides-images/
+

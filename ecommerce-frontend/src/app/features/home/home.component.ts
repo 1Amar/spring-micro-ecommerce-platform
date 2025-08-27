@@ -1,7 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { Observable } from 'rxjs';
-import { Product, ProductCategory } from '@shared/models/product.model';
+import { map } from 'rxjs/operators';
+import { Product, ProductCategory, ProductSearchResult } from '@shared/models/product.model';
 import { ProductService } from '@core/services/product.service';
 
 @Component({
@@ -17,7 +18,10 @@ export class HomeComponent implements OnInit {
     private productService: ProductService,
     private router: Router
   ) {
-    this.featuredProducts$ = this.productService.getFeaturedProducts(8);
+    // Extract content array from ProductSearchResult
+    this.featuredProducts$ = this.productService.getFeaturedProducts(0, 8).pipe(
+      map((result: ProductSearchResult) => result.content || [])
+    );
     this.categories$ = this.productService.categories$;
   }
 

@@ -51,6 +51,15 @@ public class ProductDto {
     private String tags;
     private Integer sortOrder;
     
+    // Image information
+    private String imageUrl;
+    
+    // Amazon-specific fields
+    private Double stars;
+    private Integer reviewCount;
+    private Integer boughtInLastMonth;
+    private Boolean isBestSeller;
+    
     // Category information
     private Long categoryId;
     private String categoryName;
@@ -308,5 +317,47 @@ public class ProductDto {
     
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
+    }
+    
+    // Image URL
+    public String getImageUrl() {
+        return imageUrl;
+    }
+    
+    public void setImageUrl(String imageUrl) {
+        this.imageUrl = imageUrl;
+    }
+    
+    // Amazon-specific fields
+    public Double getStars() {
+        return stars;
+    }
+    
+    public void setStars(Double stars) {
+        this.stars = stars;
+    }
+    
+    public Integer getReviewCount() {
+        return reviewCount;
+    }
+    
+    public void setReviewCount(Integer reviewCount) {
+        this.reviewCount = reviewCount;
+    }
+    
+    public Integer getBoughtInLastMonth() {
+        return boughtInLastMonth;
+    }
+    
+    public void setBoughtInLastMonth(Integer boughtInLastMonth) {
+        this.boughtInLastMonth = boughtInLastMonth;
+    }
+    
+    public Boolean getIsBestSeller() {
+        return isBestSeller;
+    }
+    
+    public void setIsBestSeller(Boolean isBestSeller) {
+        this.isBestSeller = isBestSeller;
     }
 }

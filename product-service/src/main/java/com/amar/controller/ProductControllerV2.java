@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/products/catalog")
@@ -335,5 +336,44 @@ public class ProductControllerV2 {
         logger.info("Toggling featured status for product ID: {}", id);
         ProductDto product = productService.toggleFeaturedStatus(id);
         return ResponseEntity.ok(product);
+    }
+    
+    /**
+     * Get catalog statistics
+     */
+    @GetMapping("/stats")
+    public ResponseEntity<Object> getCatalogStats() {
+        logger.info("Fetching catalog statistics");
+        try {
+            // Get basic stats using existing ProductService methods
+            List<String> brands = productService.getDistinctBrands();
+            BigDecimal[] priceRange = productService.getPriceRange();
+            List<ProductDto> lowStockProducts = productService.getLowStockProducts();
+            List<ProductDto> outOfStockProducts = productService.getOutOfStockProducts();
+            
+            // Simple stats without additional repository calls
+            return ResponseEntity.ok(Map.of(
+                "status", "success",
+                "stats", Map.of(
+                    "distinctBrands", brands.size(),
+                    "brands", brands,
+                    "priceRange", Map.of(
+                        "min", priceRange[0],
+                        "max", priceRange[1]
+                    ),
+                    "inventory", Map.of(
+                        "lowStockProducts", lowStockProducts.size(),
+                        "outOfStockProducts", outOfStockProducts.size()
+                    )
+                )
+            ));
+        } catch (Exception e) {
+            logger.error("Error fetching catalog stats", e);
+            return ResponseEntity.status(500).body(Map.of(
+                "status", "error",
+                "message", "Unable to fetch catalog statistics",
+                "error", e.getMessage()
+            ));
+        }
     }
 }

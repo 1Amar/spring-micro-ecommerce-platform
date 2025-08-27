@@ -152,20 +152,16 @@ public class ProductService {
     public Page<ProductDto> getAllProducts(Pageable pageable) {
         logger.debug("Fetching all products with pagination: {}", pageable);
         
-        // Get all products - using basic approach, will handle lazy loading properly
-        List<Product> allProducts = productRepository.findAll();
+        // PERFORMANCE FIX: Use pageable directly instead of loading all 1.4M+ products
+        Page<Product> productPage = productRepository.findAll(pageable);
         
         // Convert to DTOs
-        List<ProductDto> productDtos = allProducts.stream()
+        List<ProductDto> productDtos = productPage.getContent().stream()
                 .map(productMapperMS::toDto)
                 .toList();
         
-        // Manual pagination (temporary solution)
-        int start = (int) pageable.getOffset();
-        int end = Math.min((start + pageable.getPageSize()), productDtos.size());
-        List<ProductDto> pagedProducts = productDtos.subList(start, end);
-        
-        return new PageImpl<>(pagedProducts, pageable, productDtos.size());
+        // Return paginated result using database pagination
+        return new PageImpl<>(productDtos, pageable, productPage.getTotalElements());
     }
     
     /**
