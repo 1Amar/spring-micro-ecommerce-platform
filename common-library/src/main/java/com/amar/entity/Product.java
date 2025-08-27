@@ -50,7 +50,7 @@ public class Product {
     
     @Min(value = 0, message = "Low stock threshold cannot be negative")
     @Column(name = "low_stock_threshold")
-    private Integer lowStockThreshold = 0;
+    private Integer lowStockThreshold = 1;
     
     @Column(name = "track_inventory")
     private Boolean trackInventory = true;
@@ -71,14 +71,41 @@ public class Product {
     @Column(name = "brand", length = 100)
     private String brand;
     
+    // Product image fields (single image per product)
+    @Column(name = "image_url", columnDefinition = "TEXT")
+    private String imageUrl;
+    
+    @Size(max = 200, message = "Image alt text must not exceed 200 characters")
+    @Column(name = "image_alt_text", length = 200)
+    private String imageAltText;
+    
+    @Column(name = "product_url", columnDefinition = "TEXT")
+    private String productUrl;
+    
+    @DecimalMin(value = "0.0", message = "Stars must be non-negative")
+    @DecimalMax(value = "5.0", message = "Stars cannot exceed 5.0")
+    @Column(name = "stars", precision = 3, scale = 2)
+    private BigDecimal stars;
+    
+    @Min(value = 0, message = "Review count cannot be negative")
+    @Column(name = "review_count")
+    private Integer reviewCount = 0;
+    
+    @Column(name = "is_best_seller")
+    private Boolean isBestSeller = false;
+    
+    @Min(value = 0, message = "Bought in last month cannot be negative")
+    @Column(name = "bought_in_last_month")
+    private Integer boughtInLastMonth = 0;
+    
     @Column(name = "meta_title")
     private String metaTitle;
     
     @Column(name = "meta_description")
     private String metaDescription;
     
-    @Column(name = "tags")
-    private String tags;
+    @Column(name = "tags", columnDefinition = "TEXT[]")
+    private String[] tags;
     
     @Column(name = "sort_order")
     private Integer sortOrder = 0;
@@ -149,6 +176,30 @@ public class Product {
         if (!isOnSale()) return 0.0;
         return getSavingsAmount().divide(compareAtPrice, 4, java.math.RoundingMode.HALF_UP)
                                 .multiply(BigDecimal.valueOf(100)).doubleValue();
+    }
+    
+    // Amazon-specific helper methods
+    public boolean hasRating() {
+        return stars != null && stars.compareTo(BigDecimal.ZERO) > 0;
+    }
+    
+    public boolean isHighlyRated() {
+        return hasRating() && stars.compareTo(new BigDecimal("4.0")) >= 0;
+    }
+    
+    public boolean isPopular() {
+        return boughtInLastMonth != null && boughtInLastMonth > 100;
+    }
+    
+    public String getFormattedRating() {
+        if (!hasRating()) return "No rating";
+        return String.format("%.1f (%d reviews)", stars.doubleValue(), reviewCount != null ? reviewCount : 0);
+    }
+    
+    public String getPopularityText() {
+        if (isBestSeller != null && isBestSeller) return "Best Seller";
+        if (isPopular()) return String.format("%d+ bought last month", boughtInLastMonth);
+        return "";
     }
     
     // Getters and Setters
@@ -281,6 +332,62 @@ public class Product {
         this.brand = brand;
     }
     
+    public String getImageUrl() {
+        return imageUrl;
+    }
+    
+    public void setImageUrl(String imageUrl) {
+        this.imageUrl = imageUrl;
+    }
+    
+    public String getImageAltText() {
+        return imageAltText;
+    }
+    
+    public void setImageAltText(String imageAltText) {
+        this.imageAltText = imageAltText;
+    }
+    
+    public String getProductUrl() {
+        return productUrl;
+    }
+    
+    public void setProductUrl(String productUrl) {
+        this.productUrl = productUrl;
+    }
+    
+    public BigDecimal getStars() {
+        return stars;
+    }
+    
+    public void setStars(BigDecimal stars) {
+        this.stars = stars;
+    }
+    
+    public Integer getReviewCount() {
+        return reviewCount;
+    }
+    
+    public void setReviewCount(Integer reviewCount) {
+        this.reviewCount = reviewCount;
+    }
+    
+    public Boolean getIsBestSeller() {
+        return isBestSeller;
+    }
+    
+    public void setIsBestSeller(Boolean isBestSeller) {
+        this.isBestSeller = isBestSeller;
+    }
+    
+    public Integer getBoughtInLastMonth() {
+        return boughtInLastMonth;
+    }
+    
+    public void setBoughtInLastMonth(Integer boughtInLastMonth) {
+        this.boughtInLastMonth = boughtInLastMonth;
+    }
+    
     public String getMetaTitle() {
         return metaTitle;
     }
@@ -297,11 +404,11 @@ public class Product {
         this.metaDescription = metaDescription;
     }
     
-    public String getTags() {
+    public String[] getTags() {
         return tags;
     }
     
-    public void setTags(String tags) {
+    public void setTags(String[] tags) {
         this.tags = tags;
     }
     

@@ -26,6 +26,7 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
      */
     Optional<Product> findBySlug(String slug);
     
+    
     /**
      * Find all active products
      */
@@ -164,9 +165,9 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     Object[] findPriceRange();
     
     /**
-     * Find products by tags
+     * Find products by tags (PostgreSQL array contains)
      */
-    @Query("SELECT p FROM Product p WHERE p.tags LIKE CONCAT('%', :tag, '%') AND p.isActive = true")
+    @Query(value = "SELECT * FROM products p WHERE :tag = ANY(p.tags) AND p.is_active = true", nativeQuery = true)
     Page<Product> findByTagsContaining(@Param("tag") String tag, Pageable pageable);
     
     /**
@@ -192,4 +193,52 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
      */
     @Query("SELECT p FROM Product p WHERE p.isActive = true ORDER BY p.isFeatured DESC, p.createdAt DESC")
     List<Product> findBestSellingProducts(Pageable pageable);
+    
+    // Amazon-specific queries
+    
+    /**
+     * Find Amazon bestseller products
+     */
+    Page<Product> findByIsBestSellerTrueAndIsActiveTrue(Pageable pageable);
+    
+    /**
+     * Find highly rated products (4 stars and above)
+     */
+    @Query("SELECT p FROM Product p WHERE p.stars >= 4.0 AND p.isActive = true ORDER BY p.stars DESC, p.reviewCount DESC")
+    Page<Product> findHighlyRatedProducts(Pageable pageable);
+    
+    /**
+     * Find popular products (high purchase count)
+     */
+    @Query("SELECT p FROM Product p WHERE p.boughtInLastMonth > :threshold AND p.isActive = true ORDER BY p.boughtInLastMonth DESC")
+    Page<Product> findPopularProducts(@Param("threshold") Integer threshold, Pageable pageable);
+    
+    /**
+     * Find products by rating range
+     */
+    @Query("SELECT p FROM Product p WHERE p.stars BETWEEN :minRating AND :maxRating AND p.isActive = true ORDER BY p.stars DESC")
+    Page<Product> findByRatingRange(@Param("minRating") BigDecimal minRating, @Param("maxRating") BigDecimal maxRating, Pageable pageable);
+    
+    /**
+     * Advanced search with Amazon fields
+     */
+    @Query("SELECT p FROM Product p WHERE " +
+           "(:name IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%', :name, '%'))) AND " +
+           "(:categoryId IS NULL OR p.category.id = :categoryId) AND " +
+           "(:minPrice IS NULL OR p.price >= :minPrice) AND " +
+           "(:maxPrice IS NULL OR p.price <= :maxPrice) AND " +
+           "(:minRating IS NULL OR p.stars >= :minRating) AND " +
+           "(:isBestSeller IS NULL OR p.isBestSeller = :isBestSeller) AND " +
+           "(:minReviews IS NULL OR p.reviewCount >= :minReviews) AND " +
+           "p.isActive = true")
+    Page<Product> searchProductsAdvanced(
+        @Param("name") String name,
+        @Param("categoryId") Long categoryId,
+        @Param("minPrice") BigDecimal minPrice,
+        @Param("maxPrice") BigDecimal maxPrice,
+        @Param("minRating") BigDecimal minRating,
+        @Param("isBestSeller") Boolean isBestSeller,
+        @Param("minReviews") Integer minReviews,
+        Pageable pageable
+    );
 }

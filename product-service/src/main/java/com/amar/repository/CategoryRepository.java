@@ -4,9 +4,11 @@ import com.amar.entity.Category;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -105,4 +107,31 @@ public interface CategoryRepository extends JpaRepository<Category, Long> {
      * Find categories by parent category
      */
     List<Category> findByParentAndIsActiveTrueOrderByDisplayOrderAsc(Category parent);
+    
+    /**
+     * Insert category with specific ID (for CSV import)
+     */
+    @Modifying
+    @Transactional
+    @Query(value = "INSERT INTO categories (id, name, slug, is_active, display_order, created_at, updated_at) " +
+                   "VALUES (:id, :name, :slug, true, :displayOrder, NOW(), NOW()) " +
+                   "ON CONFLICT (id) DO NOTHING", 
+           nativeQuery = true)
+    int insertCategory(@Param("id") Long id, 
+                      @Param("name") String name, 
+                      @Param("slug") String slug, 
+                      @Param("displayOrder") Integer displayOrder);
+    
+    /**
+     * Insert category with specific ID (for CSV import) - simplified version
+     */
+    @Modifying
+    @Transactional
+    @Query(value = "INSERT INTO categories (id, name, slug, is_active, display_order, created_at, updated_at) " +
+                   "VALUES (:id, :name, :slug, true, :id, NOW(), NOW()) " +
+                   "ON CONFLICT (id) DO NOTHING", 
+           nativeQuery = true)
+    int insertCategory(@Param("id") Long id, 
+                      @Param("name") String name, 
+                      @Param("slug") String slug);
 }

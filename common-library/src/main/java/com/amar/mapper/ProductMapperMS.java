@@ -20,17 +20,20 @@ public interface ProductMapperMS {
     @Mapping(target = "onSale", expression = "java(product.isOnSale())")
     @Mapping(target = "savingsAmount", expression = "java(product.getSavingsAmount())")
     @Mapping(target = "savingsPercentage", expression = "java(product.getSavingsPercentage())")
+    @Mapping(source = "tags", target = "tags", qualifiedByName = "arrayToString")
     ProductDto toDto(Product product);
     
     @Mapping(target = "category", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
+    @Mapping(source = "tags", target = "tags", qualifiedByName = "stringToArray")
     Product toEntity(ProductDto productDto);
     
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "category", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
+    @Mapping(source = "tags", target = "tags", qualifiedByName = "stringToArray")
     void updateEntityFromDto(ProductDto productDto, @MappingTarget Product product);
     
     List<ProductDto> toDtoList(List<Product> products);
@@ -49,5 +52,18 @@ public interface ProductMapperMS {
     @Named("categoryToCategoryId") 
     default Long mapCategoryToCategoryId(Category category) {
         return category != null ? category.getId() : null;
+    }
+    
+    // Tags conversion methods
+    @Named("arrayToString")
+    default String mapArrayToString(String[] array) {
+        if (array == null || array.length == 0) return null;
+        return String.join(",", array);
+    }
+    
+    @Named("stringToArray")
+    default String[] mapStringToArray(String str) {
+        if (str == null || str.trim().isEmpty()) return null;
+        return str.split(",");
     }
 }

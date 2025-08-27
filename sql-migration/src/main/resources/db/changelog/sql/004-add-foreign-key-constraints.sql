@@ -9,11 +9,7 @@ ADD CONSTRAINT fk_products_category
 FOREIGN KEY (category_id) REFERENCES categories(id) 
 ON DELETE RESTRICT ON UPDATE CASCADE;
 
--- Add foreign key constraint for product_images.product_id
-ALTER TABLE product_images 
-ADD CONSTRAINT fk_product_images_product 
-FOREIGN KEY (product_id) REFERENCES products(id) 
-ON DELETE CASCADE ON UPDATE CASCADE;
+-- product_images table removed - using single image per product approach
 
 -- Add foreign key constraint for product_attributes.product_id
 ALTER TABLE product_attributes 
@@ -25,5 +21,4 @@ ON DELETE CASCADE ON UPDATE CASCADE;
 -- This is already handled in the categories table creation, so we'll skip it to avoid conflicts
 
 --rollback ALTER TABLE product_attributes DROP CONSTRAINT IF EXISTS fk_product_attributes_product;
---rollback ALTER TABLE product_images DROP CONSTRAINT IF EXISTS fk_product_images_product;
 --rollback ALTER TABLE products DROP CONSTRAINT IF EXISTS fk_products_category;

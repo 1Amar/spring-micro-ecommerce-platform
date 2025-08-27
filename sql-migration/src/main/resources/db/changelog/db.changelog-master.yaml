@@ -6,17 +6,20 @@ databaseChangeLog:
       file: sql/002-create-products-table.sql
       relativeToChangelogFile: true
   - include:
-      file: sql/003-create-product-images-table.sql
+      file: sql/003-create-product-attributes-table.sql
       relativeToChangelogFile: true
   - include:
-      file: sql/004-create-product-attributes-table.sql
+      file: sql/004-add-foreign-key-constraints.sql
       relativeToChangelogFile: true
   - include:
-      file: sql/005-add-foreign-key-constraints.sql
+      file: sql/005-create-indexes.sql
       relativeToChangelogFile: true
   - include:
-      file: sql/006-create-indexes.sql
+      file: sql/006-add-product-image-fields.sql
       relativeToChangelogFile: true
   - include:
-      file: sql/007-insert-sample-data.sql
+      file: sql/007-partition-products-table.sql
+      relativeToChangelogFile: true
+  - include:
+      file: sql/008-optimize-amazon-data-queries.sql
       relativeToChangelogFile: true

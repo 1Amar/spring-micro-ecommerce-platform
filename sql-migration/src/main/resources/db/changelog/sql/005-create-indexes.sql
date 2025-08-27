@@ -20,10 +20,7 @@ CREATE INDEX IF NOT EXISTS idx_products_created_at ON products(created_at);
 CREATE INDEX IF NOT EXISTS idx_products_name_text_search ON products USING gin(to_tsvector('english', name));
 CREATE INDEX IF NOT EXISTS idx_products_description_text_search ON products USING gin(to_tsvector('english', description));
 
--- Product Images indexes
-CREATE INDEX IF NOT EXISTS idx_product_images_product_id ON product_images(product_id);
-CREATE INDEX IF NOT EXISTS idx_product_images_primary ON product_images(product_id, is_primary);
-CREATE INDEX IF NOT EXISTS idx_product_images_order ON product_images(product_id, sort_order);
+-- Product Images indexes removed - using single image per product approach
 
 -- Product Attributes indexes
 CREATE INDEX IF NOT EXISTS idx_product_attributes_product_id ON product_attributes(product_id);
@@ -44,9 +41,6 @@ CREATE INDEX IF NOT EXISTS idx_product_attributes_required ON product_attributes
 --rollback DROP INDEX IF EXISTS idx_products_created_at;
 --rollback DROP INDEX IF EXISTS idx_products_name_text_search;
 --rollback DROP INDEX IF EXISTS idx_products_description_text_search;
---rollback DROP INDEX IF EXISTS idx_product_images_product_id;
---rollback DROP INDEX IF EXISTS idx_product_images_primary;
---rollback DROP INDEX IF EXISTS idx_product_images_order;
 --rollback DROP INDEX IF EXISTS idx_product_attributes_product_id;
 --rollback DROP INDEX IF EXISTS idx_product_attributes_name;
 --rollback DROP INDEX IF EXISTS idx_product_attributes_variant;
