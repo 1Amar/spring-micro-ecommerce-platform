@@ -8,6 +8,7 @@ export const environment = {
   },
   services: {
     productService: '/products',
+    userService: '/users',
     inventoryService: '/inventory',
     orderService: '/orders',
     paymentService: '/payments',

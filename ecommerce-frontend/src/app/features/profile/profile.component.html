@@ -1,0 +1,449 @@
+<!-- Loading Spinner -->
+<div *ngIf="loading" class="loading-container">
+  <app-loading-spinner></app-loading-spinner>
+  <p>Loading your profile...</p>
+</div>
+
+<!-- Main Profile Content -->
+<div *ngIf="!loading" class="container-fluid py-4">
+  <div class="row">
+    <div class="col-12">
+      <!-- Header -->
+      <div class="profile-header card-custom mb-4">
+        <div class="row align-items-center">
+          <div class="col-auto">
+            <div class="avatar-container">
+              <div *ngIf="currentUser?.profile?.avatarUrl; else initials" class="avatar-image">
+                <img [src]="currentUser?.profile?.avatarUrl" [alt]="getDisplayName()" />
+              </div>
+              <ng-template #initials>
+                <div class="avatar-initials">
+                  {{ getInitials() }}
+                </div>
+              </ng-template>
+            </div>
+          </div>
+          <div class="col">
+            <h1 class="mb-1">{{ getDisplayName() || 'Welcome' }}</h1>
+            <p class="text-muted mb-2" *ngIf="currentUser?.email">{{ currentUser?.email }}</p>
+            <p class="text-muted small mb-0" *ngIf="currentUser?.createdAt">
+              Member since {{ currentUser?.createdAt | date:'MMMM yyyy' }}
+            </p>
+          </div>
+          <div class="col-auto">
+            <span class="badge" [class]="currentUser?.isActive ? 'badge-success-custom' : 'badge-warning-custom'">
+              {{ currentUser?.isActive ? 'Active' : 'Inactive' }}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Profile Information Card -->
+      <div class="card-custom mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <h3 class="mb-0">
+            <mat-icon class="me-2">person</mat-icon>
+            Profile Information
+          </h3>
+          <button 
+            *ngIf="!isEditingProfile" 
+            class="btn btn-primary-custom btn-sm"
+            (click)="startEditingProfile()">
+            <mat-icon>edit</mat-icon>
+            Edit Profile
+          </button>
+        </div>
+
+        <div class="card-body">
+          <!-- View Mode -->
+          <div *ngIf="!isEditingProfile" class="profile-view">
+            <div class="row" *ngIf="currentUser?.profile; else noProfile">
+              <div class="col-md-6">
+                <div class="profile-field">
+                  <label>First Name</label>
+                  <p>{{ currentUser?.profile?.firstName || 'Not provided' }}</p>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="profile-field">
+                  <label>Last Name</label>
+                  <p>{{ currentUser?.profile?.lastName || 'Not provided' }}</p>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="profile-field">
+                  <label>Phone Number</label>
+                  <p>{{ currentUser?.profile?.phoneNumber || 'Not provided' }}</p>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="profile-field">
+                  <label>Date of Birth</label>
+                  <p>{{ currentUser?.profile?.dateOfBirth | date:'longDate' || 'Not provided' }}</p>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="profile-field">
+                  <label>Gender</label>
+                  <p>{{ currentUser?.profile?.gender || 'Not specified' }}</p>
+                </div>
+              </div>
+              <div class="col-12" *ngIf="currentUser?.profile?.bio">
+                <div class="profile-field">
+                  <label>Bio</label>
+                  <p>{{ currentUser?.profile?.bio }}</p>
+                </div>
+              </div>
+            </div>
+
+            <ng-template #noProfile>
+              <div class="text-center py-4">
+                <mat-icon class="text-muted display-1">person_add</mat-icon>
+                <h4 class="mt-3">Complete Your Profile</h4>
+                <p class="text-muted">Add your personal information to get started.</p>
+              </div>
+            </ng-template>
+          </div>
+
+          <!-- Edit Mode -->
+          <div *ngIf="isEditingProfile" class="profile-edit">
+            <form [formGroup]="profileForm" (ngSubmit)="saveProfile()">
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="form-group">
+                    <label for="firstName">First Name</label>
+                    <input 
+                      type="text" 
+                      id="firstName"
+                      class="form-control" 
+                      formControlName="firstName"
+                      placeholder="Enter your first name">
+                    <div class="invalid-feedback" *ngIf="profileForm.get('firstName')?.invalid && profileForm.get('firstName')?.touched">
+                      <small *ngIf="profileForm.get('firstName')?.errors?.['maxlength']">
+                        First name must not exceed 100 characters
+                      </small>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="col-md-6">
+                  <div class="form-group">
+                    <label for="lastName">Last Name</label>
+                    <input 
+                      type="text" 
+                      id="lastName"
+                      class="form-control" 
+                      formControlName="lastName"
+                      placeholder="Enter your last name">
+                    <div class="invalid-feedback" *ngIf="profileForm.get('lastName')?.invalid && profileForm.get('lastName')?.touched">
+                      <small *ngIf="profileForm.get('lastName')?.errors?.['maxlength']">
+                        Last name must not exceed 100 characters
+                      </small>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="col-md-6">
+                  <div class="form-group">
+                    <label for="phoneNumber">Phone Number</label>
+                    <input 
+                      type="tel" 
+                      id="phoneNumber"
+                      class="form-control" 
+                      formControlName="phoneNumber"
+                      placeholder="Enter your phone number">
+                    <div class="invalid-feedback" *ngIf="profileForm.get('phoneNumber')?.invalid && profileForm.get('phoneNumber')?.touched">
+                      <small *ngIf="profileForm.get('phoneNumber')?.errors?.['maxlength']">
+                        Phone number must not exceed 15 characters
+                      </small>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="col-md-6">
+                  <div class="form-group">
+                    <label for="dateOfBirth">Date of Birth</label>
+                    <input 
+                      type="date" 
+                      id="dateOfBirth"
+                      class="form-control" 
+                      formControlName="dateOfBirth">
+                  </div>
+                </div>
+
+                <div class="col-md-6">
+                  <div class="form-group">
+                    <label for="gender">Gender</label>
+                    <select id="gender" class="form-control" formControlName="gender">
+                      <option value="">Select gender</option>
+                      <option *ngFor="let option of genderOptions" [value]="option.value">
+                        {{ option.label }}
+                      </option>
+                    </select>
+                  </div>
+                </div>
+
+                <div class="col-md-6">
+                  <div class="form-group">
+                    <label for="avatarUrl">Avatar URL</label>
+                    <input 
+                      type="url" 
+                      id="avatarUrl"
+                      class="form-control" 
+                      formControlName="avatarUrl"
+                      placeholder="https://example.com/avatar.jpg">
+                    <div class="invalid-feedback" *ngIf="profileForm.get('avatarUrl')?.invalid && profileForm.get('avatarUrl')?.touched">
+                      <small *ngIf="profileForm.get('avatarUrl')?.errors?.['pattern']">
+                        Please enter a valid URL starting with http:// or https://
+                      </small>
+                      <small *ngIf="profileForm.get('avatarUrl')?.errors?.['maxlength']">
+                        URL must not exceed 255 characters
+                      </small>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="col-12">
+                  <div class="form-group">
+                    <label for="bio">Bio</label>
+                    <textarea 
+                      id="bio"
+                      class="form-control" 
+                      formControlName="bio" 
+                      rows="3"
+                      placeholder="Tell us about yourself..."></textarea>
+                    <div class="invalid-feedback" *ngIf="profileForm.get('bio')?.invalid && profileForm.get('bio')?.touched">
+                      <small *ngIf="profileForm.get('bio')?.errors?.['maxlength']">
+                        Bio must not exceed 500 characters
+                      </small>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="form-actions">
+                <button type="submit" 
+                        class="btn btn-primary-custom me-2" 
+                        [disabled]="profileForm.invalid || profileLoading">
+                  <span *ngIf="profileLoading" class="spinner-border spinner-border-sm me-1"></span>
+                  <mat-icon *ngIf="!profileLoading">save</mat-icon>
+                  {{ profileLoading ? 'Saving...' : 'Save Profile' }}
+                </button>
+                <button type="button" 
+                        class="btn btn-secondary" 
+                        (click)="cancelEditProfile()"
+                        [disabled]="profileLoading">
+                  <mat-icon>cancel</mat-icon>
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <!-- Addresses Card -->
+      <div class="card-custom mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <h3 class="mb-0">
+            <mat-icon class="me-2">location_on</mat-icon>
+            My Addresses
+          </h3>
+          <button 
+            *ngIf="!isAddingAddress && !isEditingAddress" 
+            class="btn btn-primary-custom btn-sm"
+            (click)="startAddingAddress()">
+            <mat-icon>add</mat-icon>
+            Add Address
+          </button>
+        </div>
+
+        <div class="card-body">
+          <!-- Address List -->
+          <div *ngIf="currentUser?.addresses?.length; else noAddresses" class="addresses-list">
+            <div *ngFor="let address of currentUser?.addresses; let i = index" 
+                 class="address-item" 
+                 [class.default-address]="address.isDefault">
+              <div class="row align-items-center">
+                <div class="col">
+                  <div class="d-flex align-items-center mb-2">
+                    <span class="address-type-badge">{{ address.type }}</span>
+                    <span *ngIf="address.isDefault" class="badge badge-primary-custom ms-2">Default</span>
+                  </div>
+                  <p class="mb-1">{{ formatAddress(address) }}</p>
+                  <small class="text-muted">{{ getShortAddress(address) }}</small>
+                </div>
+                <div class="col-auto">
+                  <div class="btn-group">
+                    <button class="btn btn-sm btn-outline-primary" 
+                            (click)="startEditingAddress(i)"
+                            [disabled]="isEditingAddress || isAddingAddress">
+                      <mat-icon>edit</mat-icon>
+                    </button>
+                    <button *ngIf="!address.isDefault" 
+                            class="btn btn-sm btn-outline-success" 
+                            (click)="setDefaultAddress(i)"
+                            [disabled]="addressLoading">
+                      <mat-icon>star</mat-icon>
+                    </button>
+                    <button class="btn btn-sm btn-outline-danger" 
+                            (click)="deleteAddress(i)"
+                            [disabled]="addressLoading">
+                      <mat-icon>delete</mat-icon>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <ng-template #noAddresses>
+            <div *ngIf="!isAddingAddress && !isEditingAddress" class="text-center py-4">
+              <mat-icon class="text-muted display-1">location_off</mat-icon>
+              <h4 class="mt-3">No Addresses Added</h4>
+              <p class="text-muted">Add your delivery addresses for a better shopping experience.</p>
+            </div>
+          </ng-template>
+
+          <!-- Add/Edit Address Form -->
+          <div *ngIf="isAddingAddress || isEditingAddress" class="address-form mt-3">
+            <hr>
+            <h4>{{ isAddingAddress ? 'Add New Address' : 'Edit Address' }}</h4>
+            
+            <form [formGroup]="addressForm" (ngSubmit)="saveAddress()">
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="form-group">
+                    <label for="addressType">Address Type *</label>
+                    <select id="addressType" class="form-control" formControlName="type" required>
+                      <option *ngFor="let type of addressTypes" [value]="type.value">
+                        {{ type.label }}
+                      </option>
+                    </select>
+                  </div>
+                </div>
+
+                <div class="col-md-6">
+                  <div class="form-group">
+                    <div class="form-check mt-4">
+                      <input 
+                        type="checkbox" 
+                        id="isDefault" 
+                        class="form-check-input" 
+                        formControlName="isDefault">
+                      <label class="form-check-label" for="isDefault">
+                        Set as default address
+                      </label>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="col-12">
+                  <div class="form-group">
+                    <label for="street">Street Address *</label>
+                    <input 
+                      type="text" 
+                      id="street"
+                      class="form-control" 
+                      formControlName="street" 
+                      placeholder="123 Main Street"
+                      required>
+                    <div class="invalid-feedback" *ngIf="addressForm.get('street')?.invalid && addressForm.get('street')?.touched">
+                      <small *ngIf="addressForm.get('street')?.errors?.['required']">Street address is required</small>
+                      <small *ngIf="addressForm.get('street')?.errors?.['maxlength']">Street address must not exceed 255 characters</small>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="col-md-6">
+                  <div class="form-group">
+                    <label for="city">City *</label>
+                    <input 
+                      type="text" 
+                      id="city"
+                      class="form-control" 
+                      formControlName="city" 
+                      placeholder="New York"
+                      required>
+                    <div class="invalid-feedback" *ngIf="addressForm.get('city')?.invalid && addressForm.get('city')?.touched">
+                      <small *ngIf="addressForm.get('city')?.errors?.['required']">City is required</small>
+                      <small *ngIf="addressForm.get('city')?.errors?.['maxlength']">City must not exceed 100 characters</small>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="col-md-3">
+                  <div class="form-group">
+                    <label for="state">State *</label>
+                    <input 
+                      type="text" 
+                      id="state"
+                      class="form-control" 
+                      formControlName="state" 
+                      placeholder="NY"
+                      required>
+                    <div class="invalid-feedback" *ngIf="addressForm.get('state')?.invalid && addressForm.get('state')?.touched">
+                      <small *ngIf="addressForm.get('state')?.errors?.['required']">State is required</small>
+                      <small *ngIf="addressForm.get('state')?.errors?.['maxlength']">State must not exceed 100 characters</small>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="col-md-3">
+                  <div class="form-group">
+                    <label for="zipCode">ZIP Code *</label>
+                    <input 
+                      type="text" 
+                      id="zipCode"
+                      class="form-control" 
+                      formControlName="zipCode" 
+                      placeholder="10001"
+                      required>
+                    <div class="invalid-feedback" *ngIf="addressForm.get('zipCode')?.invalid && addressForm.get('zipCode')?.touched">
+                      <small *ngIf="addressForm.get('zipCode')?.errors?.['required']">ZIP code is required</small>
+                      <small *ngIf="addressForm.get('zipCode')?.errors?.['maxlength']">ZIP code must not exceed 20 characters</small>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="col-12">
+                  <div class="form-group">
+                    <label for="country">Country *</label>
+                    <input 
+                      type="text" 
+                      id="country"
+                      class="form-control" 
+                      formControlName="country" 
+                      placeholder="United States"
+                      required>
+                    <div class="invalid-feedback" *ngIf="addressForm.get('country')?.invalid && addressForm.get('country')?.touched">
+                      <small *ngIf="addressForm.get('country')?.errors?.['required']">Country is required</small>
+                      <small *ngIf="addressForm.get('country')?.errors?.['maxlength']">Country must not exceed 100 characters</small>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="form-actions">
+                <button type="submit" 
+                        class="btn btn-primary-custom me-2" 
+                        [disabled]="addressForm.invalid || addressLoading">
+                  <span *ngIf="addressLoading" class="spinner-border spinner-border-sm me-1"></span>
+                  <mat-icon *ngIf="!addressLoading">save</mat-icon>
+                  {{ addressLoading ? 'Saving...' : (isAddingAddress ? 'Add Address' : 'Update Address') }}
+                </button>
+                <button type="button" 
+                        class="btn btn-secondary" 
+                        (click)="cancelAddressEdit()"
+                        [disabled]="addressLoading">
+                  <mat-icon>cancel</mat-icon>
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

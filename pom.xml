@@ -26,6 +26,7 @@
     <module>payment-service</module>
     <module>product-service</module>
     <module>search-service</module>
+    <module>user-service</module>
     <!-- add more as you scaffold -->
   </modules>
 

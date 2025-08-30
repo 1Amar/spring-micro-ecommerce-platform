@@ -54,6 +54,10 @@ spring:
           predicates:
             - Path=/api/v1/notifications/**
             
+        - id: user-service
+          uri: lb://user-service
+          predicates:
+            - Path=/api/v1/users/**
             
         - id: search-service
           uri: lb://search-service

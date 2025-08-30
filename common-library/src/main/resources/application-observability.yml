@@ -56,4 +56,5 @@ keycloak:
   credentials:
     secret: backend-secret-key
   use-resource-role-mappings: true
-  cors: true
+  # CORS handled by API Gateway - disable service-level CORS
+  cors: false

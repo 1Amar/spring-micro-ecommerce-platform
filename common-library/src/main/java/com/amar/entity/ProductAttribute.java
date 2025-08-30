@@ -30,11 +30,11 @@ public class ProductAttribute {
     private String value;
     
     @Enumerated(EnumType.STRING)
-    @Column(name = "type")
+    @Column(name = "attribute_type")
     private AttributeType type = AttributeType.TEXT;
     
-    @Column(name = "is_filterable")
-    private Boolean isFilterable = false;
+    @Column(name = "is_variant")
+    private Boolean isVariant = false;
     
     @Column(name = "is_required")
     private Boolean isRequired = false;
@@ -42,9 +42,6 @@ public class ProductAttribute {
     @Column(name = "sort_order")
     private Integer sortOrder = 0;
     
-    @Size(max = 100, message = "Unit must not exceed 100 characters")
-    @Column(name = "unit", length = 100)
-    private String unit;
     
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -91,12 +88,6 @@ public class ProductAttribute {
     }
     
     // Helper methods
-    public String getFormattedValue() {
-        if (unit != null && !unit.trim().isEmpty()) {
-            return value + " " + unit;
-        }
-        return value;
-    }
     
     public boolean isNumeric() {
         return type == AttributeType.NUMBER;
@@ -163,12 +154,12 @@ public class ProductAttribute {
         this.type = type;
     }
     
-    public Boolean getIsFilterable() {
-        return isFilterable;
+    public Boolean getIsVariant() {
+        return isVariant;
     }
     
-    public void setIsFilterable(Boolean isFilterable) {
-        this.isFilterable = isFilterable;
+    public void setIsVariant(Boolean isVariant) {
+        this.isVariant = isVariant;
     }
     
     public Boolean getIsRequired() {
@@ -187,13 +178,6 @@ public class ProductAttribute {
         this.sortOrder = sortOrder;
     }
     
-    public String getUnit() {
-        return unit;
-    }
-    
-    public void setUnit(String unit) {
-        this.unit = unit;
-    }
     
     public LocalDateTime getCreatedAt() {
         return createdAt;
@@ -231,7 +215,7 @@ public class ProductAttribute {
                 ", name='" + name + '\'' +
                 ", value='" + value + '\'' +
                 ", type=" + type +
-                ", isFilterable=" + isFilterable +
+                ", isVariant=" + isVariant +
                 '}';
     }
 }

@@ -1,0 +1,360 @@
+/* Loading Container */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+  
+  p {
+    margin-top: 16px;
+    color: var(--text-secondary);
+  }
+}
+
+/* Profile Header */
+.profile-header {
+  padding: 2rem;
+  margin-bottom: 2rem;
+  background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+  color: white;
+  border-radius: 12px;
+  
+  h1 {
+    color: white;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+  }
+  
+  .text-muted {
+    color: rgba(255, 255, 255, 0.8) !important;
+  }
+  
+  .badge {
+    font-size: 0.8rem;
+    padding: 0.5rem 1rem;
+  }
+}
+
+/* Avatar Styles */
+.avatar-container {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 4px solid rgba(255, 255, 255, 0.2);
+  
+  .avatar-image {
+    width: 100%;
+    height: 100%;
+    
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+  }
+  
+  .avatar-initials {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.15);
+    color: white;
+    font-size: 1.8rem;
+    font-weight: 600;
+    backdrop-filter: blur(10px);
+  }
+}
+
+/* Card Styles */
+.card-custom {
+  border: none;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07), 0 1px 3px rgba(0, 0, 0, 0.06);
+  transition: all 0.3s ease;
+  
+  &:hover {
+    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1), 0 3px 6px rgba(0, 0, 0, 0.08);
+  }
+  
+  .card-header {
+    background: var(--card-background);
+    border-bottom: 1px solid var(--border-color);
+    padding: 1.5rem;
+    border-radius: 12px 12px 0 0;
+    
+    h3 {
+      color: var(--text-primary);
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      
+      mat-icon {
+        color: var(--primary-color);
+      }
+    }
+  }
+  
+  .card-body {
+    padding: 1.5rem;
+  }
+}
+
+/* Profile View */
+.profile-view {
+  .profile-field {
+    margin-bottom: 1.5rem;
+    
+    label {
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--text-secondary);
+      margin-bottom: 0.25rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    p {
+      font-size: 1rem;
+      color: var(--text-primary);
+      margin-bottom: 0;
+      padding: 0.5rem 0;
+      border-bottom: 1px solid var(--border-color);
+    }
+  }
+}
+
+/* Form Styles */
+.profile-edit,
+.address-form {
+  .form-group {
+    margin-bottom: 1.5rem;
+    
+    label {
+      font-weight: 500;
+      color: var(--text-primary);
+      margin-bottom: 0.5rem;
+      display: block;
+    }
+    
+    .form-control {
+      border: 1.5px solid var(--border-color);
+      border-radius: 8px;
+      padding: 12px 16px;
+      font-size: 0.95rem;
+      transition: all 0.2s ease;
+      
+      &:focus {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.1);
+        outline: none;
+      }
+      
+      &.is-invalid {
+        border-color: var(--error-color);
+      }
+    }
+    
+    .form-check {
+      .form-check-input {
+        &:checked {
+          background-color: var(--primary-color);
+          border-color: var(--primary-color);
+        }
+        
+        &:focus {
+          box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.1);
+        }
+      }
+      
+      .form-check-label {
+        color: var(--text-primary);
+        font-weight: 500;
+      }
+    }
+    
+    .invalid-feedback {
+      display: block;
+      color: var(--error-color);
+      font-size: 0.8125rem;
+      margin-top: 0.25rem;
+    }
+  }
+}
+
+/* Form Actions */
+.form-actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border-color);
+  
+  .btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    
+    mat-icon {
+      font-size: 1.125rem;
+    }
+    
+    .spinner-border-sm {
+      width: 1rem;
+      height: 1rem;
+    }
+  }
+}
+
+/* Address Styles */
+.addresses-list {
+  .address-item {
+    padding: 1.5rem;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    transition: all 0.2s ease;
+    
+    &:hover {
+      border-color: var(--primary-color);
+      box-shadow: 0 2px 8px rgba(33, 150, 243, 0.1);
+    }
+    
+    &.default-address {
+      border-color: var(--primary-color);
+      background: rgba(33, 150, 243, 0.02);
+    }
+    
+    .address-type-badge {
+      background: var(--primary-color);
+      color: white;
+      padding: 0.25rem 0.75rem;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    .btn-group {
+      .btn {
+        padding: 0.375rem 0.75rem;
+        
+        mat-icon {
+          font-size: 1rem;
+        }
+      }
+    }
+  }
+}
+
+/* Empty State */
+.text-center {
+  mat-icon.display-1 {
+    font-size: 4rem;
+    opacity: 0.3;
+  }
+  
+  h4 {
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+  }
+  
+  .text-muted {
+    color: var(--text-secondary) !important;
+  }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .profile-header {
+    padding: 1.5rem;
+    
+    .row {
+      text-align: center;
+      
+      .col-auto {
+        margin-bottom: 1rem;
+      }
+    }
+  }
+  
+  .avatar-container {
+    width: 60px;
+    height: 60px;
+    
+    .avatar-initials {
+      font-size: 1.4rem;
+    }
+  }
+  
+  .card-custom {
+    .card-header,
+    .card-body {
+      padding: 1rem;
+    }
+  }
+  
+  .addresses-list {
+    .address-item {
+      .btn-group {
+        .btn {
+          padding: 0.25rem 0.5rem;
+          
+          mat-icon {
+            font-size: 0.875rem;
+          }
+        }
+      }
+    }
+  }
+  
+  .form-actions {
+    flex-direction: column;
+    
+    .btn {
+      width: 100%;
+      justify-content: center;
+    }
+  }
+}
+
+/* Animation for form transitions */
+.profile-edit,
+.address-form {
+  animation: fadeInUp 0.3s ease;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Custom scrollbar for long content */
+.card-body {
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  &::-webkit-scrollbar-track {
+    background: var(--background-color);
+  }
+  
+  &::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: 3px;
+    
+    &:hover {
+      background: var(--text-light);
+    }
+  }
+}

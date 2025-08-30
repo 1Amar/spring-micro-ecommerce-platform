@@ -1,25 +1,4 @@
 services:
-  postgres:
-    image: postgres:15
-    container_name: postgres
-    environment:
-      POSTGRES_DB: ecommerce_dev
-      POSTGRES_USER: devuser
-      POSTGRES_PASSWORD: devpass
-    ports:
-      - "5432:5432"
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
-      - ./init-pg_hba.sh:/docker-entrypoint-initdb.d/init-pg_hba.sh
-    healthcheck:
-      test: ["CMD", "pg_isready", "-U", "devuser"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    networks:
-      - microservices-network
-
   zookeeper:
     image: confluentinc/cp-zookeeper:7.4.1
     container_name: zookeeper
@@ -106,7 +85,7 @@ services:
     container_name: keycloak_ecom
     environment:
       KC_DB: postgres
-      KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
+      KC_DB_URL: jdbc:postgresql://host.docker.internal:5432/keycloak
       KC_DB_USERNAME: keycloak_user
       KC_DB_PASSWORD: keycloak_pass
       KEYCLOAK_ADMIN: admin
@@ -116,17 +95,15 @@ services:
       KC_HTTP_ENABLED: true
       KC_HEALTH_ENABLED: true
       KC_HTTP_CORS: true
-      KC_HTTP_CORS_HEADERS: "Authorization,Content-Type,X-Requested-With"
-      KC_HTTP_CORS_METHODS: "GET,POST,PUT,DELETE,OPTIONS"
-      KC_HTTP_CORS_ORIGINS: "http://localhost:4200,http://localhost:4201,http://127.0.0.1:4200,http://127.0.0.1:4201"
+      KC_HTTP_CORS_HEADERS: "Authorization,Content-Type,X-Requested-With,Accept,Origin,Access-Control-Request-Method,Access-Control-Request-Headers"
+      KC_HTTP_CORS_METHODS: "GET,POST,PUT,DELETE,OPTIONS,HEAD"
+      KC_HTTP_CORS_ORIGINS: "http://localhost:4200,http://localhost:4201,http://127.0.0.1:4200"
     command: start-dev
     volumes:
-      - ./keycloak-themes:/opt/keycloak/themes/custom
+      - ./keycloak-themes/ecommerce:/opt/keycloak/themes/ecommerce
     ports:
       - "8080:8080"
-    depends_on:
-      postgres:
-        condition: service_healthy
+    # No dependencies - using external Windows PostgreSQL
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:8080/health/ready || exit 1"]
       interval: 30s
@@ -176,7 +153,6 @@ services:
       - microservices-network
 
 volumes:
-  pgdata:
   esdata:
   
 networks:

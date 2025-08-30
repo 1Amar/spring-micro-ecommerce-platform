@@ -29,7 +29,7 @@ echo Eureka Service Registry starting...
 
 REM Wait for Eureka to be ready
 echo Waiting for Eureka to start (10 seconds)...
-timeout /t 10 /nobreak >nul
+timeout /t 20 /nobreak >nul
 echo.
 
 REM Start API Gateway (port 8081)
@@ -40,6 +40,17 @@ echo API Gateway starting...
 
 REM Wait for API Gateway
 echo Waiting for API Gateway to start (5 seconds)...
+timeout /t 5 /nobreak >nul
+echo.
+
+REM Start User Service (port 8082)
+echo Starting User Service...
+cd "%ROOT_DIR%user-service"
+start "User Service" cmd /c "mvn spring-boot:run"
+echo API User Service...
+
+REM Wait for API Gateway
+echo Waiting for User Service to start (5 seconds)...
 timeout /t 5 /nobreak >nul
 echo.
 

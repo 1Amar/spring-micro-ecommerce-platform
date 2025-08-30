@@ -1,89 +1,141 @@
 export interface User {
-  id: string;
-  username: string;
+  id: number;
+  keycloakId?: string;
   email: string;
-  firstName: string;
-  lastName: string;
-  phone?: string;
-  dateOfBirth?: Date;
-  gender?: 'male' | 'female' | 'other';
-  avatar?: string;
-  preferences: UserPreferences;
-  addresses: Address[];
-  paymentMethods: PaymentMethod[];
+  username: string;
+  isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
-  lastLoginAt?: Date;
-  isEmailVerified: boolean;
-  isPhoneVerified: boolean;
+  profile?: UserProfile;
+  addresses?: UserAddress[];
+  fullName?: string;
+  defaultAddress?: UserAddress;
 }
 
-export interface UserPreferences {
-  language: string;
-  currency: string;
-  timezone: string;
-  notifications: NotificationPreferences;
-  privacy: PrivacySettings;
+export interface UserProfile {
+  id?: number;
+  firstName?: string;
+  lastName?: string;
+  phoneNumber?: string;
+  dateOfBirth?: Date;
+  gender?: string;
+  bio?: string;
+  avatarUrl?: string;
+  createdAt?: Date;
+  updatedAt?: Date;
+  fullName?: string;
+  initials?: string;
 }
 
-export interface NotificationPreferences {
-  email: {
-    orderUpdates: boolean;
-    promotions: boolean;
-    newsletter: boolean;
-    productUpdates: boolean;
-  };
-  sms: {
-    orderUpdates: boolean;
-    promotions: boolean;
-  };
-  push: {
-    orderUpdates: boolean;
-    promotions: boolean;
-    recommendations: boolean;
-  };
+export interface UserAddress {
+  id?: number;
+  type: 'HOME' | 'WORK' | 'OTHER';
+  street: string;
+  city: string;
+  state: string;
+  zipCode: string;
+  country: string;
+  isDefault?: boolean;
+  createdAt?: Date;
+  updatedAt?: Date;
+  formattedAddress?: string;
+  shortAddress?: string;
 }
 
-export interface PrivacySettings {
-  profileVisibility: 'public' | 'friends' | 'private';
-  showOnlineStatus: boolean;
-  allowRecommendations: boolean;
-  dataCollection: boolean;
+export interface CreateUserRequest {
+  keycloakId?: string;
+  email: string;
+  username: string;
+  isActive?: boolean;
+}
+
+export interface UpdateUserRequest {
+  keycloakId?: string;
+  email?: string;
+  username?: string;
+  isActive?: boolean;
+}
+
+export interface CreateUserProfileRequest {
+  firstName?: string;
+  lastName?: string;
+  phoneNumber?: string;
+  dateOfBirth?: Date;
+  gender?: string;
+  bio?: string;
+  avatarUrl?: string;
 }
 
 export interface UpdateUserProfileRequest {
   firstName?: string;
   lastName?: string;
-  phone?: string;
+  phoneNumber?: string;
   dateOfBirth?: Date;
-  gender?: 'male' | 'female' | 'other';
-  preferences?: Partial<UserPreferences>;
+  gender?: string;
+  bio?: string;
+  avatarUrl?: string;
 }
 
-export interface Address {
-  id?: string;
-  type: 'shipping' | 'billing';
-  firstName: string;
-  lastName: string;
-  company?: string;
+export interface CreateUserAddressRequest {
+  type: 'HOME' | 'WORK' | 'OTHER';
   street: string;
-  apartment?: string;
   city: string;
   state: string;
   zipCode: string;
   country: string;
-  phone?: string;
   isDefault?: boolean;
 }
 
-export interface PaymentMethod {
-  id: string;
-  type: 'credit_card' | 'debit_card' | 'paypal' | 'bank_transfer';
-  provider?: string;
-  lastFour?: string;
-  expiryMonth?: number;
-  expiryYear?: number;
-  cardholderName?: string;
+export interface UpdateUserAddressRequest {
+  type?: 'HOME' | 'WORK' | 'OTHER';
+  street?: string;
+  city?: string;
+  state?: string;
+  zipCode?: string;
+  country?: string;
   isDefault?: boolean;
-  createdAt: Date;
+}
+
+export interface UserStats {
+  totalUsers: number;
+  activeUsers: number;
+  inactiveUsers: number;
+  usersWithProfiles: number;
+  usersWithoutProfiles: number;
+}
+
+// Response interfaces
+export interface PageResponse<T> {
+  content: T[];
+  pageable: {
+    sort: {
+      empty: boolean;
+      sorted: boolean;
+      unsorted: boolean;
+    };
+    offset: number;
+    pageSize: number;
+    pageNumber: number;
+    paged: boolean;
+    unpaged: boolean;
+  };
+  last: boolean;
+  totalElements: number;
+  totalPages: number;
+  size: number;
+  number: number;
+  sort: {
+    empty: boolean;
+    sorted: boolean;
+    unsorted: boolean;
+  };
+  first: boolean;
+  numberOfElements: number;
+  empty: boolean;
+}
+
+export interface ApiResponse<T> {
+  data: T;
+  message?: string;
+  success: boolean;
 }
