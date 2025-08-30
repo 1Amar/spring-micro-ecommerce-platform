@@ -1,0 +1,66 @@
+server:
+  port: 8089
+
+spring:
+  application:
+    name: cart-service
+  
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      timeout: 2000ms
+      lettuce:
+        pool:
+          max-active: 20
+          max-wait: -1ms
+          max-idle: 5
+          min-idle: 0
+
+  cloud:
+    loadbalancer:
+      ribbon:
+        enabled: false
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+    fetch-registry: true
+    register-with-eureka: true
+  instance:
+    prefer-ip-address: true
+    lease-renewal-interval-in-seconds: 30
+
+# Product Service Integration
+product-service:
+  url: http://product-service
+
+# Observability
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      show-details: always
+  tracing:
+    sampling:
+      probability: 1.0
+
+# OpenTelemetry
+otel:
+  exporter:
+    otlp:
+      endpoint: http://localhost:4317
+  service:
+    name: cart-service
+    version: 1.0.0
+
+logging:
+  level:
+    com.amar.cart: DEBUG
+    org.springframework.data.redis: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"

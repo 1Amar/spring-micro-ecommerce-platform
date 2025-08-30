@@ -28,10 +28,5 @@ export class AppComponent implements OnInit {
     
     // Initialize cart when app starts
     this.cartService.getCart().subscribe();
-    
-    // Merge local cart with server cart if user is logged in
-    if (this.isLoggedIn) {
-      this.cartService.mergeLocalCartWithServer().subscribe();
-    }
   }
 }

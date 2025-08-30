@@ -33,6 +33,8 @@ public class ReactiveCorsConfig {
             "X-Requested-With",
             "Cache-Control",
             "X-Correlation-ID",
+            "X-User-Id",
+            "X-User-Email",
             "Access-Control-Allow-Origin",
             "Access-Control-Allow-Headers",
             "Origin"

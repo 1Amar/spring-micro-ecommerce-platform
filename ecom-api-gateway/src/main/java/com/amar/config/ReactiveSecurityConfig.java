@@ -67,6 +67,7 @@ public class ReactiveSecurityConfig {
                 .pathMatchers("/api/v1/notifications/**").authenticated()
                 .pathMatchers("/api/v1/catalog/**").authenticated()
                 .pathMatchers("/api/v1/search/**").authenticated()
+                .pathMatchers("/api/v1/cart/**").authenticated() // Cart service endpoints
                 
                 // Catch-all - Requires authentication
                 .anyExchange().authenticated()

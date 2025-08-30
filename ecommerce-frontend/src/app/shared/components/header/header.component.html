@@ -44,7 +44,13 @@
         
         <!-- Cart -->
         <a routerLink="/cart" mat-icon-button class="cart-button" aria-label="Shopping cart">
-          <mat-icon [matBadge]="cartItemCount$ | async" matBadgeColor="accent" aria-hidden="false">shopping_cart</mat-icon>
+          <mat-icon 
+            [matBadge]="(cartItemCount$ | async) || 0" 
+            matBadgeColor="accent" 
+            [matBadgeHidden]="(cartItemCount$ | async) === 0"
+            aria-hidden="false">
+            shopping_cart
+          </mat-icon>
         </a>
 
         <!-- User Menu (Logged In) -->
@@ -152,16 +158,26 @@
     </div>
 
     <!-- Mobile User Actions -->
-    <div class="mobile-user-actions" *ngIf="isLoggedIn$ | async">
+    <div class="mobile-user-actions">
       <mat-divider></mat-divider>
-      <a routerLink="/profile" class="mobile-action-link" (click)="toggleMenu()">
-        <mat-icon>person</mat-icon>
-        My Profile
+      <a routerLink="/cart" class="mobile-action-link" (click)="toggleMenu()">
+        <mat-icon matBadge="{{ (cartItemCount$ | async) || 0 }}" 
+                  matBadgeColor="accent" 
+                  [matBadgeHidden]="(cartItemCount$ | async) === 0">
+          shopping_cart
+        </mat-icon>
+        Shopping Cart
       </a>
-      <a routerLink="/orders" class="mobile-action-link" (click)="toggleMenu()">
-        <mat-icon>receipt</mat-icon>
-        My Orders
-      </a>
+      <div *ngIf="isLoggedIn$ | async">
+        <a routerLink="/profile" class="mobile-action-link" (click)="toggleMenu()">
+          <mat-icon>person</mat-icon>
+          My Profile
+        </a>
+        <a routerLink="/orders" class="mobile-action-link" (click)="toggleMenu()">
+          <mat-icon>receipt</mat-icon>
+          My Orders
+        </a>
+      </div>
     </div>
 
   </div>

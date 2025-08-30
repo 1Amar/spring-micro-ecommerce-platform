@@ -40,7 +40,7 @@ echo API Gateway starting...
 
 REM Wait for API Gateway
 echo Waiting for API Gateway to start (5 seconds)...
-timeout /t 5 /nobreak >nul
+timeout /t 10 /nobreak >nul
 echo.
 
 REM Start User Service (port 8082)
@@ -50,8 +50,19 @@ start "User Service" cmd /c "mvn spring-boot:run"
 echo API User Service...
 
 REM Wait for API Gateway
-echo Waiting for User Service to start (5 seconds)...
-timeout /t 5 /nobreak >nul
+echo Waiting for User Service to start (10 seconds)...
+timeout /t 10 /nobreak >nul
+echo.
+
+REM Start Cart Service (port 8089)
+echo Starting Cart Service...
+cd "%ROOT_DIR%cart-service"
+start "Cart Service" cmd /c "mvn spring-boot:run"
+echo Cart Service...
+
+REM Wait for API Gateway
+echo Waiting for Cart Service to start (10 seconds)...
+timeout /t 10 /nobreak >nul
 echo.
 
 REM Start Order Service (port 8083)
@@ -61,7 +72,7 @@ start "Order Service" cmd /c "mvn spring-boot:run"
 echo Order Service starting...
 
 REM Wait a bit before starting next service
-timeout /t 3 /nobreak >nul
+timeout /t 10 /nobreak >nul
 
 REM Start Inventory Service (port 8084)
 echo Starting Inventory Service...
@@ -70,7 +81,7 @@ start "Inventory Service" cmd /c "mvn spring-boot:run"
 echo Inventory Service starting...
 
 REM Wait a bit before starting next service
-timeout /t 3 /nobreak >nul
+timeout /t 10 /nobreak >nul
 
 REM Start Product Service (port 8085)
 echo Starting Product Service...
@@ -79,7 +90,7 @@ start "Product Service" cmd /c "mvn spring-boot:run"
 echo Product Service starting...
 
 REM Wait a bit before starting next service
-timeout /t 3 /nobreak >nul
+timeout /t 10 /nobreak >nul
 
 REM Start Payment Service (port 8086)
 echo Starting Payment Service...
@@ -88,7 +99,7 @@ start "Payment Service" cmd /c "mvn spring-boot:run"
 echo Payment Service starting...
 
 REM Wait a bit before starting next service
-timeout /t 3 /nobreak >nul
+timeout /t 10 /nobreak >nul
 
 REM Start Notification Service (port 8087)
 echo Starting Notification Service...
@@ -97,7 +108,7 @@ start "Notification Service" cmd /c "mvn spring-boot:run"
 echo Notification Service starting...
 
 REM Wait a bit before starting next service
-timeout /t 3 /nobreak >nul
+timeout /t 10 /nobreak >nul
 
 
 REM Start Search Service (port 8090)
