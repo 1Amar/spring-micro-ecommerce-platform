@@ -31,6 +31,15 @@ export class AuthInterceptor implements HttpInterceptor {
       if (token) {
         headers['Authorization'] = `Bearer ${token}`;
       }
+      
+      // Add user identification headers for debugging and cart session management
+      const currentUser = this.authService.getCurrentUser();
+      if (currentUser) {
+        headers['X-User-Id'] = currentUser.username || 'unknown';
+        if (currentUser.email) {
+          headers['X-User-Email'] = currentUser.email;
+        }
+      }
     }
 
     request = request.clone({ setHeaders: headers });

@@ -1,38 +1,34 @@
+// Cart item matching backend CartItemDto
 export interface CartItem {
-  id: string;
-  productId: string;
+  productId: number;
   productName: string;
-  productImage: string;
-  sku: string;
-  price: number;
+  imageUrl: string;
   quantity: number;
-  maxQuantity: number;
-  specifications?: { [key: string]: string };
-  addedAt: Date;
+  unitPrice: number;
+  totalPrice: number;
+  addedAt: string; // ISO string from backend
 }
 
+// Cart matching backend CartDto
 export interface Cart {
-  id: string;
+  cartId: string;
   userId?: string;
+  sessionId?: string;
   items: CartItem[];
-  itemCount: number;
-  subtotal: number;
-  tax: number;
-  shipping: number;
-  discount: number;
-  total: number;
-  currency: string;
-  updatedAt: Date;
+  totalAmount: number;
+  createdAt: string; // ISO string from backend
+  updatedAt: string; // ISO string from backend
+  itemCount: number; // Computed property from backend
 }
 
+// Request DTOs matching backend
 export interface AddToCartRequest {
-  productId: string;
+  productId: number;
   quantity: number;
-  specifications?: { [key: string]: string };
 }
 
 export interface UpdateCartItemRequest {
-  cartItemId: string;
+  productId: number;
   quantity: number;
 }
 

@@ -5,6 +5,8 @@ import { debounceTime, switchMap, takeUntil, startWith, catchError } from 'rxjs/
 import { PageEvent } from '@angular/material/paginator';
 import { Product, ProductSearchResult, ProductCategory } from '@shared/models/product.model';
 import { ProductService } from '@core/services/product.service';
+import { CartService } from '@core/services/cart.service';
+import { AddToCartRequest } from '@shared/models/cart.model';
 import { Page, PageRequest, ProductFilters } from '@shared/models/page.model';
 
 @Component({
@@ -460,6 +462,7 @@ export class ProductsComponent implements OnInit, OnDestroy {
 
   constructor(
     public productService: ProductService,
+    private cartService: CartService,
     private route: ActivatedRoute,
     private router: Router
   ) {}
@@ -622,9 +625,25 @@ export class ProductsComponent implements OnInit, OnDestroy {
   }
 
   addToCart(product: Product): void {
-    // Implement add to cart functionality
-    console.log('Add to cart:', product);
-    // You would typically call a cart service here
+    if (!product.inStock) {
+      return;
+    }
+
+    const request: AddToCartRequest = {
+      productId: product.id,
+      quantity: 1
+    };
+
+    this.cartService.addToCart(request).subscribe({
+      next: (cart) => {
+        console.log('Product added to cart:', product.name);
+        // Could show a snackbar notification here
+      },
+      error: (error) => {
+        console.error('Failed to add product to cart:', error);
+        // Could show an error snackbar here
+      }
+    });
   }
 
   onImageError(event: any): void {
