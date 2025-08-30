@@ -18,7 +18,7 @@
         "type": "stat",
         "targets": [
           {
-            "expr": "up{job=~\".*service.*|api-gateway|eureka-service-registry\"}",
+            "expr": "up{job=~\".*service.*|api-gateway|eureka-service-registry|cart-service|user-service|product-service\"}",
             "legendFormat": "{{job}}",
             "refId": "A"
           }
@@ -57,7 +57,7 @@
         "type": "stat",
         "targets": [
           {
-            "expr": "count(up{job=~\".*service.*|api-gateway|eureka-service-registry\"})",
+            "expr": "count(up{job=~\".*service.*|api-gateway|eureka-service-registry|cart-service|user-service|product-service\"})",
             "legendFormat": "Total Services",
             "refId": "A"
           }
@@ -90,7 +90,7 @@
         "type": "stat",
         "targets": [
           {
-            "expr": "count(up{job=~\".*service.*|api-gateway|eureka-service-registry\"} == 1)",
+            "expr": "count(up{job=~\".*service.*|api-gateway|eureka-service-registry|cart-service|user-service|product-service\"} == 1)",
             "legendFormat": "Healthy",
             "refId": "A"
           }
@@ -161,12 +161,12 @@
         "type": "graph",
         "targets": [
           {
-            "expr": "jvm_memory_used_bytes{job=~\".*service.*|api-gateway|eureka-service-registry\", area=\"heap\"}",
+            "expr": "jvm_memory_used_bytes{job=~\".*service.*|api-gateway|eureka-service-registry|cart-service|user-service|product-service\", area=\"heap\"}",
             "legendFormat": "{{job}} - Used",
             "refId": "A"
           },
           {
-            "expr": "jvm_memory_max_bytes{job=~\".*service.*|api-gateway|eureka-service-registry\", area=\"heap\"}",
+            "expr": "jvm_memory_max_bytes{job=~\".*service.*|api-gateway|eureka-service-registry|cart-service|user-service|product-service\", area=\"heap\"}",
             "legendFormat": "{{job}} - Max",
             "refId": "B"
           }
@@ -185,7 +185,7 @@
         "type": "graph",
         "targets": [
           {
-            "expr": "system_cpu_usage{job=~\".*service.*|api-gateway|eureka-service-registry\"}",
+            "expr": "system_cpu_usage{job=~\".*service.*|api-gateway|eureka-service-registry|cart-service|user-service|product-service\"}",
             "legendFormat": "{{job}}",
             "refId": "A"
           }
@@ -269,6 +269,68 @@
         ],
         "xAxis": {"show": true},
         "legend": {"show": true, "values": false, "min": false, "max": false, "current": false, "total": false, "avg": false}
+      },
+      {
+        "id": 11,
+        "title": "Cart Service Operations",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "sum(rate(http_server_requests_seconds_count{job=\"cart-service\", uri=~\".*cart.*\"}[5m])) by (uri, method)",
+            "legendFormat": "{{method}} {{uri}}",
+            "refId": "A"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 38},
+        "yAxes": [
+          {"label": "Cart Operations/sec", "min": 0, "show": true},
+          {"show": false}
+        ],
+        "xAxis": {"show": true},
+        "legend": {"show": true, "values": false, "min": false, "max": false, "current": false, "total": false, "avg": false}
+      },
+      {
+        "id": 12,
+        "title": "User Service Operations", 
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "sum(rate(http_server_requests_seconds_count{job=\"user-service\", uri=~\".*users.*\"}[5m])) by (uri, method)",
+            "legendFormat": "{{method}} {{uri}}",
+            "refId": "A"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 38},
+        "yAxes": [
+          {"label": "User Operations/sec", "min": 0, "show": true},
+          {"show": false}
+        ],
+        "xAxis": {"show": true},
+        "legend": {"show": true, "values": false, "min": false, "max": false, "current": false, "total": false, "avg": false}
+      },
+      {
+        "id": 13,
+        "title": "Product Service Performance (Response Times)",
+        "type": "graph", 
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, sum(rate(http_server_requests_seconds_bucket{job=\"product-service\"}[5m])) by (le))",
+            "legendFormat": "95th Percentile",
+            "refId": "A"
+          },
+          {
+            "expr": "histogram_quantile(0.50, sum(rate(http_server_requests_seconds_bucket{job=\"product-service\"}[5m])) by (le))",
+            "legendFormat": "50th Percentile (Median)",
+            "refId": "B"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 24, "x": 0, "y": 46},
+        "yAxes": [
+          {"label": "Response Time (seconds)", "min": 0, "show": true},
+          {"show": false}
+        ],
+        "xAxis": {"show": true},
+        "legend": {"show": true, "values": false, "min": false, "max": false, "current": true, "total": false, "avg": false}
       }
     ],
     "templating": {
@@ -276,7 +338,7 @@
         {
           "name": "service",
           "type": "query",
-          "query": "label_values(up{job=~\".*service.*|api-gateway|eureka-service-registry\"}, job)",
+          "query": "label_values(up{job=~\".*service.*|api-gateway|eureka-service-registry|cart-service|user-service|product-service\"}, job)",
           "refresh": 1,
           "includeAll": true,
           "multi": true,
