@@ -1,51 +1,201 @@
+server:
+  port: 8084
+  shutdown: graceful
+
 spring:
   application:
     name: inventory-service
   profiles:
     include: observability
+  
+  # Database Configuration
+  datasource:
+    url: jdbc:postgresql://localhost:5432/microservices_ecom
+    username: ecom_user
+    password: ecom_pass
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      connection-timeout: 20000
+      minimum-idle: 10
+      maximum-pool-size: 30
+      idle-timeout: 300000
+      max-lifetime: 1200000
 
-server:
-  port: 8084
+  # JPA Configuration
+  jpa:
+    hibernate:
+      ddl-auto: none
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+        default_schema: inventory_service_schema
+        jdbc:
+          batch_size: 20
+        order_inserts: true
+        order_updates: true
+        batch_versioned_data: true
 
+  # Redis Configuration
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      timeout: 2000
+      database: 2  # Use different database than cart service
+      jedis:
+        pool:
+          max-active: 10
+          max-idle: 8
+          min-idle: 0
+          max-wait: -1ms
+
+  # Cache Configuration
+  cache:
+    type: redis
+    redis:
+      time-to-live: 300000  # 5 minutes default TTL
+
+  # Kafka Configuration
+  kafka:
+    bootstrap-servers: localhost:9092
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      acks: all
+      retries: 3
+      batch-size: 16384
+      linger-ms: 1
+      buffer-memory: 33554432
+    consumer:
+      group-id: inventory-service-group
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      auto-offset-reset: earliest
+      properties:
+        spring.json.trusted.packages: com.amar.dto,com.amar.event
+
+# Eureka Configuration
 eureka:
   client:
     service-url:
       defaultZone: http://localhost:8761/eureka/
     register-with-eureka: true
     fetch-registry: true
+    registry-fetch-interval-seconds: 30
   instance:
-    prefer-ip-address: true
     lease-renewal-interval-in-seconds: 30
     lease-expiration-duration-in-seconds: 90
+    hostname: localhost
+    prefer-ip-address: false
 
-# Observability Configuration
+# Management and Monitoring
 management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics,prometheus,env,beans
+        include: health,info,metrics,prometheus,env,beans,loggers
+      base-path: /actuator
   endpoint:
     health:
       show-details: always
-    metrics:
+      probes:
+        enabled: true
+  health:
+    circuitbreakers:
       enabled: true
-    prometheus:
-      enabled: true
-    distribution:
-      percentiles-histogram:
-        http.server.requests: true
+  metrics:
     tags:
       application: ${spring.application.name}
-      environment: dev
+      service: inventory
+  prometheus:
+    metrics:
+      export:
+        enabled: true
 
-# OpenTelemetry configuration handled by common-library
+# OpenTelemetry Configuration
+otel:
+  service:
+    name: ${spring.application.name}
+  exporter:
+    otlp:
+      endpoint: http://localhost:4318
+  metric:
+    export:
+      interval: 10s
+  traces:
+    sampler:
+      probability: 1.0
+
+# Circuit Breaker Configuration
+resilience4j:
+  circuitbreaker:
+    instances:
+      product-service:
+        slidingWindowSize: 20
+        permittedNumberOfCallsInHalfOpenState: 3
+        slidingWindowType: COUNT_BASED
+        minimumNumberOfCalls: 10
+        waitDurationInOpenState: 50s
+        failureRateThreshold: 50
+        eventConsumerBufferSize: 10
+        registerHealthIndicator: true
+  retry:
+    instances:
+      product-service:
+        maxAttempts: 3
+        waitDuration: 1s
+        retryExceptions:
+          - java.net.ConnectException
+          - java.net.SocketTimeoutException
+          - org.springframework.web.client.ResourceAccessException
+
+# Custom Application Configuration
+inventory:
+  # Stock reservation settings
+  reservation:
+    default-ttl-minutes: 15
+    max-ttl-minutes: 60
+    cleanup-interval-minutes: 5
+  
+  # Low stock alert settings
+  alerts:
+    enabled: true
+    default-threshold: 10
+    check-interval-minutes: 30
+  
+  # Background job settings  
+  jobs:
+    reservation-cleanup-cron: "0 */5 * * * *"  # Every 5 minutes
+    low-stock-check-cron: "0 */30 * * * *"    # Every 30 minutes
+  
+  # External service URLs
+  services:
+    product-service-url: http://localhost:8088
 
 # Logging Configuration
 logging:
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%X{correlationId:-}] [%thread] %-5level %logger{36} - %msg%n"
   level:
-    com.amar: DEBUG
-    org.springframework.web.client: DEBUG
+    com.amar: INFO
+    org.springframework.data: INFO
+    org.hibernate.SQL: WARN
+    org.hibernate.type.descriptor.sql.BasicBinder: WARN
+    kafka: INFO
     com.netflix.eureka: OFF
     com.netflix.discovery: OFF
+
+# Task Execution Configuration
+task:
+  execution:
+    pool:
+      core-size: 5
+      max-size: 20
+      queue-capacity: 100
+      thread-name-prefix: inventory-async-
+  scheduling:
+    pool:
+      size: 5
+      thread-name-prefix: inventory-scheduler-
