@@ -32,3 +32,12 @@ databaseChangeLog:
   - include:
       file: sql/011-create-user-addresses-table.sql
       relativeToChangelogFile: true
+  - include:
+      file: sql/012-create-inventory-schema.sql
+      relativeToChangelogFile: true
+  - include:
+      file: sql/013-fix-low-stock-alerts-schema.sql
+      relativeToChangelogFile: true
+  - include:
+      file: sql/014-fix-movement-type-enum.sql
+      relativeToChangelogFile: true
