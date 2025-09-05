@@ -19,7 +19,7 @@ public class ProductValidationService {
     private static final Logger log = LoggerFactory.getLogger(ProductValidationService.class);
     
     @Autowired
-    private WebClient productServiceClient;
+    private WebClient webClient;
     
     // Cache for product validation (1 minute TTL)
     private final Cache<Long, ProductDto> productCache = Caffeine.newBuilder()
@@ -43,12 +43,12 @@ public class ProductValidationService {
         try {
             log.info("Calling product service for product: {} at URL: {}", productId, "/api/v1/products/catalog/" + productId);
             
-            ProductDto product = productServiceClient
+            ProductDto product = webClient
                 .get()
-                .uri("/api/v1/products/catalog/{id}", productId)
+                .uri("http://localhost:8088/api/v1/products/catalog/{id}", productId)
                 .retrieve()
                 .bodyToMono(ProductDto.class)
-                .timeout(Duration.ofSeconds(10))
+                .timeout(Duration.ofSeconds(30))
                 .block();
             
             if (product == null) {
@@ -64,8 +64,8 @@ public class ProductValidationService {
             log.warn("Product not found: {}", productId);
             throw new ProductNotFoundException("Product not found: " + productId);
         } catch (Exception e) {
-            log.error("Failed to validate product: {} - Error type: {} - Message: {}", productId, e.getClass().getSimpleName(), e.getMessage(), e);
-            throw new ProductValidationException("Unable to validate product: " + productId);
+            log.error("Failed to validate product: {} - Error type: {} - Message: {} - Full stack trace:", productId, e.getClass().getSimpleName(), e.getMessage(), e);
+            throw new ProductValidationException("Unable to validate product: " + productId + " - " + e.getMessage());
         }
     }
     

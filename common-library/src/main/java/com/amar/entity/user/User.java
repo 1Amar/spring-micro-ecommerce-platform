@@ -1,4 +1,4 @@
-package com.amar.entity;
+package com.amar.entity.user;
 
 import jakarta.persistence.*;
 import org.hibernate.annotations.CreationTimestamp;

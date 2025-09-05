@@ -1,7 +1,8 @@
 package com.amar.mapper;
 
 import com.amar.dto.UserProfileDto;
-import com.amar.entity.UserProfile;
+import com.amar.entity.user.UserProfile;
+
 import org.mapstruct.*;
 
 @Mapper(componentModel = "spring")

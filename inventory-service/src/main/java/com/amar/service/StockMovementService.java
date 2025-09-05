@@ -17,7 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.amar.dto.StockMovementDto;
-import com.amar.entity.StockMovement;
+import com.amar.entity.inventory.StockMovement;
 import com.amar.mapper.StockMovementMapper;
 import com.amar.repository.StockMovementRepository;
 

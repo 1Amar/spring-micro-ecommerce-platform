@@ -14,8 +14,8 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.amar.entity.Inventory;
-import com.amar.entity.LowStockAlert;
+import com.amar.entity.inventory.Inventory;
+import com.amar.entity.inventory.LowStockAlert;
 import com.amar.repository.InventoryRepository;
 import com.amar.repository.LowStockAlertRepository;
 
@@ -71,7 +71,7 @@ public class LowStockAlertService {
         try {
             // Check if alert already exists and is recent
             Optional<LowStockAlert> existingAlert = lowStockAlertRepository
-                .findByProductIdAndStatusOrderByCreatedAtDesc(
+                .findFirstByProductIdAndStatusOrderByCreatedAtDesc(
                     inventory.getProductId(), 
                     LowStockAlert.AlertStatus.PENDING
                 );

@@ -1,7 +1,7 @@
 package com.amar.controller;
 
 import com.amar.dto.UserAddressDto;
-import com.amar.entity.UserAddress;
+import com.amar.entity.user.UserAddress;
 import com.amar.service.UserAddressService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

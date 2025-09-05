@@ -1,8 +1,8 @@
 package com.amar.service;
 
 import com.amar.dto.UserAddressDto;
-import com.amar.entity.User;
-import com.amar.entity.UserAddress;
+import com.amar.entity.user.User;
+import com.amar.entity.user.UserAddress;
 import com.amar.mapper.UserAddressMapperMS;
 import com.amar.repository.UserRepository;
 import com.amar.repository.UserAddressRepository;

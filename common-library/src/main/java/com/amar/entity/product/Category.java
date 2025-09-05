@@ -1,4 +1,4 @@
-package com.amar.entity;
+package com.amar.entity.product;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
@@ -8,6 +8,8 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+
+import com.amar.entity.product.Product;
 
 @Entity
 @Table(name = "categories")

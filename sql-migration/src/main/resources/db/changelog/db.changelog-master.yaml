@@ -41,3 +41,6 @@ databaseChangeLog:
   - include:
       file: sql/014-fix-movement-type-enum.sql
       relativeToChangelogFile: true
+  - include:
+      file: sql/015-create-order-service-schema.sql
+      relativeToChangelogFile: true

@@ -1,8 +1,9 @@
 package com.amar.mapper;
 
 import com.amar.dto.UserDto;
+import com.amar.entity.user.User;
 import com.amar.dto.UserAddressDto;
-import com.amar.entity.User;
+
 import org.mapstruct.*;
 
 import java.util.List;

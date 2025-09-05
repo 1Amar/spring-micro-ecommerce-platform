@@ -1,4 +1,4 @@
-package com.amar.entity;
+package com.amar.entity.inventory;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;

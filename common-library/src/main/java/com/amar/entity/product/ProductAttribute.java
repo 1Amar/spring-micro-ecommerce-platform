@@ -1,4 +1,4 @@
-package com.amar.entity;
+package com.amar.entity.product;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;

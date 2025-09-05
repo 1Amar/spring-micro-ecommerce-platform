@@ -1,6 +1,6 @@
 package com.amar.repository;
 
-import com.amar.entity.UserAddress;
+import com.amar.entity.user.UserAddress;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;

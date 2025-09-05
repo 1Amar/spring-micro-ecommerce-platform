@@ -1,10 +1,11 @@
 package com.amar.dto;
 
-import com.amar.entity.ProductAttribute.AttributeType;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
 import java.time.LocalDateTime;
+
+import com.amar.entity.product.ProductAttribute.AttributeType;
 
 public class ProductAttributeDto {
     

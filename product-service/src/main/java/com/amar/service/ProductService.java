@@ -1,13 +1,11 @@
 package com.amar.service;
 
-import com.amar.dto.ProductDto;
-import com.amar.entity.Product;
-import com.amar.entity.Category;
-import com.amar.repository.ProductRepository;
-import com.amar.repository.CategoryRepository;
-import com.amar.exception.ResourceNotFoundException;
-import com.amar.exception.DuplicateResourceException;
-import com.amar.mapper.ProductMapperMS;
+import java.math.BigDecimal;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,10 +17,16 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
-import java.math.BigDecimal;
-import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
+import com.amar.client.InventoryServiceClient;
+import com.amar.dto.InventoryDto;
+import com.amar.dto.ProductDto;
+import com.amar.entity.product.Category;
+import com.amar.entity.product.Product;
+import com.amar.exception.DuplicateResourceException;
+import com.amar.exception.ResourceNotFoundException;
+import com.amar.mapper.ProductMapperMS;
+import com.amar.repository.CategoryRepository;
+import com.amar.repository.ProductRepository;
 
 @Service
 @Transactional
@@ -38,6 +42,9 @@ public class ProductService {
     
     @Autowired
     private ProductMapperMS productMapperMS;
+    
+    @Autowired
+    private InventoryServiceClient inventoryServiceClient;
     
     /**
      * Create a new product
@@ -107,7 +114,7 @@ public class ProductService {
     }
     
     /**
-     * Get product by ID
+     * Get product by ID with real-time inventory
      */
     @Transactional(readOnly = true)
     public ProductDto getProductById(Long id) {
@@ -116,7 +123,12 @@ public class ProductService {
         Product product = productRepository.findById(id)
             .orElseThrow(() -> new ResourceNotFoundException("Product not found with ID: " + id));
         
-        return productMapperMS.toDto(product);
+        ProductDto productDto = productMapperMS.toDto(product);
+        
+        // Enrich with real-time inventory data
+        enrichWithInventoryData(productDto);
+        
+        return productDto;
     }
     
     /**
@@ -146,7 +158,7 @@ public class ProductService {
     }
     
     /**
-     * Get all products with pagination
+     * Get all products with pagination and real-time inventory
      */
     @Transactional(readOnly = true)
     public Page<ProductDto> getAllProducts(Pageable pageable) {
@@ -160,12 +172,15 @@ public class ProductService {
                 .map(productMapperMS::toDto)
                 .toList();
         
+        // Enrich with bulk inventory data
+        enrichWithBulkInventoryData(productDtos);
+        
         // Return paginated result using database pagination
         return new PageImpl<>(productDtos, pageable, productPage.getTotalElements());
     }
     
     /**
-     * Get products by category
+     * Get products by category with real-time inventory
      */
     @Transactional(readOnly = true)
     public Page<ProductDto> getProductsByCategory(Long categoryId, Pageable pageable) {
@@ -175,7 +190,12 @@ public class ProductService {
             .orElseThrow(() -> new ResourceNotFoundException("Category not found with ID: " + categoryId));
         
         Page<Product> products = productRepository.findByCategoryAndIsActiveTrue(category, pageable);
-        return products.map(productMapperMS::toDto);
+        Page<ProductDto> productDtos = products.map(productMapperMS::toDto);
+        
+        // Enrich with bulk inventory data
+        enrichWithBulkInventoryData(productDtos.getContent());
+        
+        return productDtos;
     }
     
     /**
@@ -400,5 +420,65 @@ public class ProductService {
         // Extract first meaningful word from product name
         String[] words = name.split("\\s+");
         return words.length > 0 ? words[0] : name;
+    }
+    
+    /**
+     * Enrich single product with real-time inventory data
+     */
+    private void enrichWithInventoryData(ProductDto productDto) {
+        if (productDto == null || productDto.getId() == null) {
+            return;
+        }
+        
+        try {
+            Optional<InventoryDto> inventory = inventoryServiceClient.getInventoryByProductId(productDto.getId());
+            if (inventory.isPresent()) {
+                productDto.setInventory(inventory.get());
+                logger.debug("Product ID {} enriched with inventory data", productDto.getId());
+            } else {
+                logger.debug("No inventory data found for product ID {}", productDto.getId());
+            }
+        } catch (Exception ex) {
+            logger.warn("Failed to fetch inventory for product ID {}: {}", productDto.getId(), ex.getMessage());
+            // Continue without inventory data - graceful degradation
+        }
+    }
+    
+    /**
+     * Enrich multiple products with bulk inventory data
+     */
+    private void enrichWithBulkInventoryData(List<ProductDto> productDtos) {
+        if (productDtos == null || productDtos.isEmpty()) {
+            return;
+        }
+        
+        try {
+            // Extract product IDs
+            List<Long> productIds = productDtos.stream()
+                    .map(ProductDto::getId)
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toList());
+            
+            if (productIds.isEmpty()) {
+                return;
+            }
+            
+            // Fetch inventory data for all products in one call
+            Map<Long, InventoryDto> inventoryMap = inventoryServiceClient.getInventoryForProducts(productIds);
+            
+            // Apply inventory data to products
+            for (ProductDto productDto : productDtos) {
+                if (productDto.getId() != null && inventoryMap.containsKey(productDto.getId())) {
+                    productDto.setInventory(inventoryMap.get(productDto.getId()));
+                }
+            }
+            
+            logger.debug("Bulk enriched {} products with inventory data from {} inventory records", 
+                        productDtos.size(), inventoryMap.size());
+                        
+        } catch (Exception ex) {
+            logger.warn("Failed to fetch bulk inventory data: {}", ex.getMessage());
+            // Continue without inventory data - graceful degradation
+        }
     }
 }

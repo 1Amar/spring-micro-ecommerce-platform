@@ -3,6 +3,54 @@ spring:
     name: ecom-order-service
   profiles:
     include: observability
+  
+  datasource:
+    url: jdbc:postgresql://localhost:5432/microservices_ecom
+    username: ecom_user
+    password: ecom_pass
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      schema: order_service
+      maximum-pool-size: 20
+      minimum-idle: 5
+      idle-timeout: 300000
+      connection-timeout: 20000
+      leak-detection-threshold: 60000
+  
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        default_schema: order_service
+        format_sql: true
+        use_sql_comments: false
+        jdbc:
+          batch_size: 25
+        order_inserts: true
+        order_updates: true
+  
+  kafka:
+    bootstrap-servers: localhost:9092
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      acks: all
+      retries: 3
+      properties:
+        enable.idempotence: true
+    consumer:
+      group-id: order-service
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      auto-offset-reset: earliest
+      enable-auto-commit: false
+      properties:
+        spring.json.trusted.packages: "*"
+        spring.json.use.type.info.headers: false
+        spring.json.value.default.type: java.util.Map
 
 server:
   port: 8083
@@ -49,3 +97,67 @@ logging:
     org.springframework.web.client: DEBUG
     com.netflix.eureka: OFF
     com.netflix.discovery: OFF
+
+# Order Service Configuration
+order:
+  kafka:
+    topics:
+      order-events: order-events
+      inventory-events: inventory-events
+      payment-events: payment-events
+  
+  reservation:
+    timeout-minutes: 15
+    
+  retry:
+    max-attempts: 3
+    backoff-delay: 1000
+
+# Service URLs
+payment:
+  service:
+    url: http://localhost:8087
+
+inventory:
+  service:
+    url: http://localhost:8084
+
+cart:
+  service:
+    url: http://localhost:8089
+
+product:
+  service:
+    url: http://localhost:8088
+
+# Circuit Breaker Configuration
+resilience4j:
+  circuitbreaker:
+    instances:
+      inventory-service:
+        registerHealthIndicator: true
+        slidingWindowSize: 10
+        permittedNumberOfCallsInHalfOpenState: 3
+        slidingWindowType: COUNT_BASED
+        minimumNumberOfCalls: 5
+        waitDurationInOpenState: 10s
+        failureRateThreshold: 50
+        eventConsumerBufferSize: 10
+      cart-service:
+        registerHealthIndicator: true
+        slidingWindowSize: 10
+        permittedNumberOfCallsInHalfOpenState: 3
+        slidingWindowType: COUNT_BASED
+        minimumNumberOfCalls: 5
+        waitDurationInOpenState: 10s
+        failureRateThreshold: 50
+        eventConsumerBufferSize: 10
+      payment-service:
+        registerHealthIndicator: true
+        slidingWindowSize: 10
+        permittedNumberOfCallsInHalfOpenState: 3
+        slidingWindowType: COUNT_BASED
+        minimumNumberOfCalls: 5
+        waitDurationInOpenState: 15s
+        failureRateThreshold: 30
+        eventConsumerBufferSize: 10

@@ -1,4 +1,4 @@
-package com.amar.entity;
+package com.amar.entity.inventory;
 
 import java.time.LocalDateTime;
 import java.util.UUID;

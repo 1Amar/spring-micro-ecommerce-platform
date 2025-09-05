@@ -11,6 +11,11 @@ public class CartItemDto {
     private BigDecimal unitPrice;
     private BigDecimal totalPrice;
     private Instant addedAt;
+    
+    // Inventory information
+    private Integer availableStock;
+    private Boolean inStock;
+    private String stockStatus;
 
     public CartItemDto() {}
 
@@ -33,6 +38,9 @@ public class CartItemDto {
     public BigDecimal getUnitPrice() { return unitPrice; }
     public BigDecimal getTotalPrice() { return totalPrice; }
     public Instant getAddedAt() { return addedAt; }
+    public Integer getAvailableStock() { return availableStock; }
+    public Boolean getInStock() { return inStock; }
+    public String getStockStatus() { return stockStatus; }
 
     // Setters
     public void setProductId(Long productId) { this.productId = productId; }
@@ -51,6 +59,9 @@ public class CartItemDto {
     
     public void setTotalPrice(BigDecimal totalPrice) { this.totalPrice = totalPrice; }
     public void setAddedAt(Instant addedAt) { this.addedAt = addedAt; }
+    public void setAvailableStock(Integer availableStock) { this.availableStock = availableStock; }
+    public void setInStock(Boolean inStock) { this.inStock = inStock; }
+    public void setStockStatus(String stockStatus) { this.stockStatus = stockStatus; }
 
     // Utility method
     public void calculateTotalPrice() {

@@ -1,6 +1,7 @@
 package com.amar.cart.exception;
 
 import com.amar.cart.service.CartItemNotFoundException;
+import com.amar.cart.service.InsufficientStockException;
 import com.amar.cart.service.ProductNotFoundException;
 import com.amar.cart.service.ProductValidationException;
 import org.slf4j.Logger;
@@ -46,6 +47,26 @@ public class CartExceptionHandler {
         );
         
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+    }
+    
+    @ExceptionHandler(InsufficientStockException.class)
+    public ResponseEntity<Map<String, Object>> handleInsufficientStockException(InsufficientStockException ex) {
+        log.warn("Insufficient stock for product {}: requested={}, available={}", 
+                ex.getProductId(), ex.getRequestedQuantity(), ex.getAvailableQuantity());
+        
+        Map<String, Object> error = createErrorResponse(
+            HttpStatus.BAD_REQUEST.value(),
+            "Insufficient Stock",
+            ex.getMessage()
+        );
+        
+        // Add additional details for frontend to display
+        error.put("productId", ex.getProductId());
+        error.put("requestedQuantity", ex.getRequestedQuantity());
+        error.put("availableQuantity", ex.getAvailableQuantity());
+        error.put("errorCode", "INSUFFICIENT_STOCK");
+        
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
     }
     
     @ExceptionHandler(ProductValidationException.class)

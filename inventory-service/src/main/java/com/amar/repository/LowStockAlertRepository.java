@@ -12,7 +12,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import com.amar.entity.LowStockAlert;
+import com.amar.entity.inventory.LowStockAlert;
 
 @Repository
 public interface LowStockAlertRepository extends JpaRepository<LowStockAlert, Long> {
@@ -20,8 +20,8 @@ public interface LowStockAlertRepository extends JpaRepository<LowStockAlert, Lo
     // Find alert by product ID
     Optional<LowStockAlert> findByProductId(Long productId);
     
-    // Find alerts by product ID and status
-    Optional<LowStockAlert> findByProductIdAndStatusOrderByCreatedAtDesc(Long productId, LowStockAlert.AlertStatus status);
+    // Find alerts by product ID and status (first result only)
+    Optional<LowStockAlert> findFirstByProductIdAndStatusOrderByCreatedAtDesc(Long productId, LowStockAlert.AlertStatus status);
     
     // Find alerts by status ordered by creation date
     List<LowStockAlert> findByStatusOrderByCreatedAtDesc(LowStockAlert.AlertStatus status);

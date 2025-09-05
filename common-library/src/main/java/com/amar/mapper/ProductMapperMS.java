@@ -1,8 +1,9 @@
 package com.amar.mapper;
 
 import com.amar.dto.ProductDto;
-import com.amar.entity.Product;
-import com.amar.entity.Category;
+import com.amar.entity.product.Category;
+import com.amar.entity.product.Product;
+
 import org.mapstruct.*;
 
 import java.util.List;

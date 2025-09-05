@@ -139,7 +139,7 @@ logging:
     console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%X{correlationId:-}] [%thread] %-5level %logger{36} - %msg%n"
   level:
     com.amar: DEBUG
-    org.springframework.cloud.gateway: DEBUG
+    org.springframework.cloud.gateway: TRACE
     org.springframework.web.reactive.function.client: DEBUG
     org.springframework.cloud.gateway.filter: INFO
     org.springframework.cloud.gateway.handler: INFO

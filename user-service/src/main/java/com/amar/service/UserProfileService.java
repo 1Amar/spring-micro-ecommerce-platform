@@ -1,8 +1,8 @@
 package com.amar.service;
 
 import com.amar.dto.UserProfileDto;
-import com.amar.entity.User;
-import com.amar.entity.UserProfile;
+import com.amar.entity.user.User;
+import com.amar.entity.user.UserProfile;
 import com.amar.mapper.UserProfileMapperMS;
 import com.amar.repository.UserRepository;
 import com.amar.repository.UserProfileRepository;

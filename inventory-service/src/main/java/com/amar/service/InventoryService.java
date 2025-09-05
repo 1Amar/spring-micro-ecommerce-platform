@@ -24,9 +24,10 @@ import com.amar.dto.request.StockAdjustmentRequest;
 import com.amar.dto.request.StockReservationRequest;
 import com.amar.dto.response.InventoryAvailabilityResponse;
 import com.amar.dto.response.StockReservationResponse;
-import com.amar.entity.Inventory;
+import com.amar.entity.inventory.Inventory;
 // InventoryMapper removed - using manual mapping
 import com.amar.repository.InventoryRepository;
+import com.amar.kafka.InventoryEventPublisher;
 
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.github.resilience4j.retry.annotation.Retry;
@@ -43,18 +44,21 @@ public class InventoryService {
     private final StockMovementService stockMovementService;
     private final ProductValidationService productValidationService;
     private final KafkaTemplate<String, Object> kafkaTemplate;
+    private final InventoryEventPublisher eventPublisher;
 
     @Autowired
     public InventoryService(InventoryRepository inventoryRepository,
                            StockReservationService stockReservationService,
                            StockMovementService stockMovementService,
                            ProductValidationService productValidationService,
-                           KafkaTemplate<String, Object> kafkaTemplate) {
+                           KafkaTemplate<String, Object> kafkaTemplate,
+                           InventoryEventPublisher eventPublisher) {
         this.inventoryRepository = inventoryRepository;
         this.stockReservationService = stockReservationService;
         this.stockMovementService = stockMovementService;
         this.productValidationService = productValidationService;
         this.kafkaTemplate = kafkaTemplate;
+        this.eventPublisher = eventPublisher;
     }
 
     // =====================================================
@@ -209,17 +213,39 @@ public class InventoryService {
     public StockReservationResponse reserveStock(StockReservationRequest request) {
         logger.info("Reserving stock for order ID: {} with {} items", request.getOrderId(), request.getItems().size());
         
-        return stockReservationService.createReservation(request);
+        StockReservationResponse response = stockReservationService.createReservation(request);
+        
+        // Publish reservation events
+        if (response.getSuccess() && response.getReservations() != null) {
+            for (var item : request.getItems()) {
+                eventPublisher.publishStockReserved(request.getOrderId(), item.getProductId(), 
+                    item.getQuantity(), LocalDateTime.now().plusMinutes(15));
+            }
+        }
+        
+        return response;
     }
 
     public void commitReservation(UUID orderId) {
         logger.info("Committing stock reservation for order ID: {}", orderId);
+        
+        // Get reservation details before committing (for event publishing)
+        // Note: This would require StockReservationService to provide reservation details
         stockReservationService.commitReservation(orderId);
+        
+        // Publish commitment event - for now without specific product details
+        eventPublisher.publishReservationCommitted(orderId, null, null);
     }
 
     public void releaseReservation(UUID orderId) {
         logger.info("Releasing stock reservation for order ID: {}", orderId);
+        
+        // Get reservation details before releasing (for event publishing)
+        // Note: This would require StockReservationService to provide reservation details
         stockReservationService.releaseReservation(orderId);
+        
+        // Publish release event - for now without specific product details
+        eventPublisher.publishReservationReleased(orderId, null, null);
     }
 
     // =====================================================
@@ -394,17 +420,36 @@ public class InventoryService {
 
     private void publishInventoryEvent(String eventType, Inventory inventory) {
         try {
-            Map<String, Object> event = Map.of(
-                "eventType", eventType,
-                "productId", inventory.getProductId(),
-                "quantity", inventory.getQuantity(),
-                "availableQuantity", inventory.getAvailableQuantity(),
-                "reservedQuantity", inventory.getReservedQuantity(),
-                "stockStatus", inventory.getStockStatus(),
-                "timestamp", LocalDateTime.now()
-            );
-            
-            kafkaTemplate.send("inventory-events", inventory.getProductId().toString(), event);
+            // Use the dedicated event publisher with proper stock change events
+            switch (eventType) {
+                case "inventory.stock.added":
+                    // We need to track old quantity for stock added events
+                    eventPublisher.publishStockAdded(inventory.getProductId(), 
+                        null, // quantity added - would need to track this
+                        inventory.getQuantity(), "Stock addition");
+                    break;
+                case "inventory.stock.removed": 
+                    eventPublisher.publishStockRemoved(inventory.getProductId(),
+                        null, // quantity removed - would need to track this  
+                        inventory.getQuantity(), "Stock removal");
+                    break;
+                case "inventory.updated":
+                case "inventory.adjusted":
+                    eventPublisher.publishStockUpdated(inventory.getProductId(),
+                        null, // old quantity - would need to track this
+                        inventory.getQuantity(),
+                        inventory.getAvailableQuantity(),
+                        inventory.getStockStatus());
+                    break;
+                default:
+                    // Fallback to generic inventory event
+                    eventPublisher.publishInventoryEvent(eventType, inventory.getProductId(), Map.of(
+                        "quantity", inventory.getQuantity(),
+                        "availableQuantity", inventory.getAvailableQuantity(),
+                        "reservedQuantity", inventory.getReservedQuantity(),
+                        "stockStatus", inventory.getStockStatus()
+                    ));
+            }
             logger.debug("Published inventory event: {} for product ID: {}", eventType, inventory.getProductId());
         } catch (Exception ex) {
             logger.error("Failed to publish inventory event for product ID: {}", inventory.getProductId(), ex);
