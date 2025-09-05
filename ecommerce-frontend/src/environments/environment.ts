@@ -11,7 +11,7 @@ export const environment = {
     userService: '/users',
     cartService: '/cart',
     inventoryService: '/inventory',
-    orderService: '/orders',
+    orderService: '/order-management',
     paymentService: '/payments',
     notificationService: '/notifications',
     catalogService: '/catalog',

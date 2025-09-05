@@ -1,0 +1,363 @@
+<div class="checkout-container">
+  <div class="container-fluid py-4">
+    <div class="row">
+      <div class="col-12">
+        <h1 class="mb-4">
+          <mat-icon>shopping_cart</mat-icon>
+          Checkout
+        </h1>
+      </div>
+    </div>
+
+    <!-- Progress Stepper -->
+    <div class="row mb-4">
+      <div class="col-12">
+        <mat-horizontal-stepper [linear]="true" [selectedIndex]="currentStep - 1">
+          <mat-step *ngFor="let step of [1,2,3,4]; let i = index" 
+                    [completed]="currentStep > step" 
+                    [editable]="currentStep >= step">
+            <ng-template matStepLabel>
+              <mat-icon>{{ getStepIcon(step) }}</mat-icon>
+              {{ getStepTitle(step) }}
+            </ng-template>
+          </mat-step>
+        </mat-horizontal-stepper>
+      </div>
+    </div>
+
+    <div class="row" *ngIf="cart">
+      <!-- Checkout Form -->
+      <div class="col-lg-8">
+        <form [formGroup]="checkoutForm" (ngSubmit)="placeOrder()">
+          
+          <!-- Step 1: Customer Information & Billing Address -->
+          <mat-card class="mb-4" *ngIf="currentStep === 1">
+            <mat-card-header>
+              <mat-card-title>Customer Information & Billing Address</mat-card-title>
+            </mat-card-header>
+            <mat-card-content>
+              <div class="row">
+                <div class="col-md-6 mb-3">
+                  <mat-form-field appearance="outline" class="w-100">
+                    <mat-label>Email Address</mat-label>
+                    <input matInput formControlName="customerEmail" type="email" required>
+                    <mat-error *ngIf="checkoutForm.get('customerEmail')?.hasError('required')">
+                      Email is required
+                    </mat-error>
+                    <mat-error *ngIf="checkoutForm.get('customerEmail')?.hasError('email')">
+                      Please enter a valid email
+                    </mat-error>
+                  </mat-form-field>
+                </div>
+                <div class="col-md-6 mb-3">
+                  <mat-form-field appearance="outline" class="w-100">
+                    <mat-label>Phone Number</mat-label>
+                    <input matInput formControlName="customerPhone" type="tel">
+                  </mat-form-field>
+                </div>
+              </div>
+
+              <h5 class="mt-4 mb-3">Billing Address</h5>
+              <div class="row">
+                <div class="col-md-6 mb-3">
+                  <mat-form-field appearance="outline" class="w-100">
+                    <mat-label>First Name</mat-label>
+                    <input matInput formControlName="billingFirstName" required>
+                    <mat-error>First name is required</mat-error>
+                  </mat-form-field>
+                </div>
+                <div class="col-md-6 mb-3">
+                  <mat-form-field appearance="outline" class="w-100">
+                    <mat-label>Last Name</mat-label>
+                    <input matInput formControlName="billingLastName" required>
+                    <mat-error>Last name is required</mat-error>
+                  </mat-form-field>
+                </div>
+                <div class="col-12 mb-3">
+                  <mat-form-field appearance="outline" class="w-100">
+                    <mat-label>Company (Optional)</mat-label>
+                    <input matInput formControlName="billingCompany">
+                  </mat-form-field>
+                </div>
+                <div class="col-12 mb-3">
+                  <mat-form-field appearance="outline" class="w-100">
+                    <mat-label>Street Address</mat-label>
+                    <input matInput formControlName="billingStreet" required>
+                    <mat-error>Street address is required</mat-error>
+                  </mat-form-field>
+                </div>
+                <div class="col-md-4 mb-3">
+                  <mat-form-field appearance="outline" class="w-100">
+                    <mat-label>City</mat-label>
+                    <input matInput formControlName="billingCity" required>
+                    <mat-error>City is required</mat-error>
+                  </mat-form-field>
+                </div>
+                <div class="col-md-4 mb-3">
+                  <mat-form-field appearance="outline" class="w-100">
+                    <mat-label>State</mat-label>
+                    <input matInput formControlName="billingState" required>
+                    <mat-error>State is required</mat-error>
+                  </mat-form-field>
+                </div>
+                <div class="col-md-4 mb-3">
+                  <mat-form-field appearance="outline" class="w-100">
+                    <mat-label>Postal Code</mat-label>
+                    <input matInput formControlName="billingPostalCode" required>
+                    <mat-error>Postal code is required</mat-error>
+                  </mat-form-field>
+                </div>
+              </div>
+            </mat-card-content>
+            <mat-card-actions>
+              <button mat-raised-button color="primary" 
+                      (click)="nextStep()" 
+                      [disabled]="!isCurrentStepValid()">
+                Next: Shipping Address
+                <mat-icon>arrow_forward</mat-icon>
+              </button>
+            </mat-card-actions>
+          </mat-card>
+
+          <!-- Step 2: Shipping Address -->
+          <mat-card class="mb-4" *ngIf="currentStep === 2">
+            <mat-card-header>
+              <mat-card-title>Shipping Address</mat-card-title>
+            </mat-card-header>
+            <mat-card-content>
+              <div class="mb-3">
+                <mat-checkbox formControlName="sameAsBilling">
+                  Same as billing address
+                </mat-checkbox>
+              </div>
+
+              <div *ngIf="!checkoutForm.get('sameAsBilling')?.value">
+                <div class="row">
+                  <div class="col-md-6 mb-3">
+                    <mat-form-field appearance="outline" class="w-100">
+                      <mat-label>First Name</mat-label>
+                      <input matInput formControlName="shippingFirstName">
+                    </mat-form-field>
+                  </div>
+                  <div class="col-md-6 mb-3">
+                    <mat-form-field appearance="outline" class="w-100">
+                      <mat-label>Last Name</mat-label>
+                      <input matInput formControlName="shippingLastName">
+                    </mat-form-field>
+                  </div>
+                  <div class="col-12 mb-3">
+                    <mat-form-field appearance="outline" class="w-100">
+                      <mat-label>Company (Optional)</mat-label>
+                      <input matInput formControlName="shippingCompany">
+                    </mat-form-field>
+                  </div>
+                  <div class="col-12 mb-3">
+                    <mat-form-field appearance="outline" class="w-100">
+                      <mat-label>Street Address</mat-label>
+                      <input matInput formControlName="shippingStreet">
+                    </mat-form-field>
+                  </div>
+                  <div class="col-md-4 mb-3">
+                    <mat-form-field appearance="outline" class="w-100">
+                      <mat-label>City</mat-label>
+                      <input matInput formControlName="shippingCity">
+                    </mat-form-field>
+                  </div>
+                  <div class="col-md-4 mb-3">
+                    <mat-form-field appearance="outline" class="w-100">
+                      <mat-label>State</mat-label>
+                      <input matInput formControlName="shippingState">
+                    </mat-form-field>
+                  </div>
+                  <div class="col-md-4 mb-3">
+                    <mat-form-field appearance="outline" class="w-100">
+                      <mat-label>Postal Code</mat-label>
+                      <input matInput formControlName="shippingPostalCode">
+                    </mat-form-field>
+                  </div>
+                </div>
+              </div>
+            </mat-card-content>
+            <mat-card-actions>
+              <button mat-button (click)="previousStep()">
+                <mat-icon>arrow_back</mat-icon>
+                Previous
+              </button>
+              <button mat-raised-button color="primary" 
+                      (click)="nextStep()" 
+                      [disabled]="!isCurrentStepValid()">
+                Next: Payment & Shipping
+                <mat-icon>arrow_forward</mat-icon>
+              </button>
+            </mat-card-actions>
+          </mat-card>
+
+          <!-- Step 3: Payment & Shipping Method -->
+          <mat-card class="mb-4" *ngIf="currentStep === 3">
+            <mat-card-header>
+              <mat-card-title>Payment & Shipping Method</mat-card-title>
+            </mat-card-header>
+            <mat-card-content>
+              <h5 class="mb-3">Payment Method</h5>
+              <mat-radio-group formControlName="paymentMethod" class="mb-4">
+                <mat-radio-button *ngFor="let method of paymentMethods" 
+                                  [value]="method.value" 
+                                  class="d-block mb-2">
+                  <div class="d-flex align-items-center">
+                    <mat-icon class="me-2">{{ method.icon }}</mat-icon>
+                    {{ method.label }}
+                  </div>
+                </mat-radio-button>
+              </mat-radio-group>
+
+              <h5 class="mb-3">Shipping Method</h5>
+              <mat-radio-group formControlName="shippingMethod">
+                <mat-radio-button *ngFor="let method of shippingMethods" 
+                                  [value]="method.value" 
+                                  class="d-block mb-2">
+                  <div class="d-flex justify-content-between align-items-center w-100">
+                    <span>{{ method.label }}</span>
+                    <span class="fw-bold">{{ formatPrice(method.price) }}</span>
+                  </div>
+                </mat-radio-button>
+              </mat-radio-group>
+
+              <div class="mt-4">
+                <h5 class="mb-3">Coupon Code</h5>
+                <div class="row">
+                  <div class="col-md-8">
+                    <mat-form-field appearance="outline" class="w-100">
+                      <mat-label>Enter coupon code</mat-label>
+                      <input matInput formControlName="couponCode">
+                    </mat-form-field>
+                  </div>
+                  <div class="col-md-4">
+                    <button type="button" mat-raised-button (click)="applyCoupon()" class="w-100">
+                      Apply Coupon
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </mat-card-content>
+            <mat-card-actions>
+              <button mat-button (click)="previousStep()">
+                <mat-icon>arrow_back</mat-icon>
+                Previous
+              </button>
+              <button mat-raised-button color="primary" 
+                      (click)="nextStep()" 
+                      [disabled]="!isCurrentStepValid()">
+                Next: Review Order
+                <mat-icon>arrow_forward</mat-icon>
+              </button>
+            </mat-card-actions>
+          </mat-card>
+
+          <!-- Step 4: Review & Place Order -->
+          <mat-card class="mb-4" *ngIf="currentStep === 4">
+            <mat-card-header>
+              <mat-card-title>Review & Place Order</mat-card-title>
+            </mat-card-header>
+            <mat-card-content>
+              <div class="mb-3">
+                <mat-form-field appearance="outline" class="w-100">
+                  <mat-label>Order Notes (Optional)</mat-label>
+                  <textarea matInput formControlName="notes" rows="3"></textarea>
+                </mat-form-field>
+              </div>
+
+              <div class="mb-3">
+                <mat-checkbox formControlName="acceptTerms" required>
+                  I accept the <a href="/terms" target="_blank">Terms and Conditions</a> 
+                  and <a href="/privacy" target="_blank">Privacy Policy</a>
+                  <mat-error *ngIf="checkoutForm.get('acceptTerms')?.hasError('required')">
+                    You must accept the terms and conditions
+                  </mat-error>
+                </mat-checkbox>
+              </div>
+            </mat-card-content>
+            <mat-card-actions>
+              <button mat-button (click)="previousStep()">
+                <mat-icon>arrow_back</mat-icon>
+                Previous
+              </button>
+              <button mat-raised-button color="primary" 
+                      type="submit"
+                      [disabled]="!checkoutForm.valid || isProcessing">
+                <mat-spinner diameter="20" *ngIf="isProcessing" class="me-2"></mat-spinner>
+                <mat-icon *ngIf="!isProcessing">check_circle</mat-icon>
+                {{ isProcessing ? 'Processing...' : 'Place Order' }}
+              </button>
+            </mat-card-actions>
+          </mat-card>
+
+        </form>
+      </div>
+
+      <!-- Order Summary -->
+      <div class="col-lg-4">
+        <mat-card class="sticky-top">
+          <mat-card-header>
+            <mat-card-title>Order Summary</mat-card-title>
+          </mat-card-header>
+          <mat-card-content>
+            <!-- Cart Items -->
+            <div class="cart-items mb-3">
+              <div *ngFor="let item of cart.items" class="d-flex align-items-center mb-2 pb-2 border-bottom">
+                <img [src]="item.imageUrl" [alt]="item.productName" 
+                     class="rounded" style="width: 50px; height: 50px; object-fit: cover;">
+                <div class="ms-3 flex-grow-1">
+                  <div class="fw-bold text-truncate">{{ item.productName }}</div>
+                  <div class="text-muted small">Qty: {{ item.quantity }}</div>
+                </div>
+                <div class="fw-bold">{{ formatPrice(item.totalPrice) }}</div>
+              </div>
+            </div>
+
+            <mat-divider class="my-3"></mat-divider>
+
+            <!-- Order Summary Calculations -->
+            <div class="d-flex justify-content-between mb-2">
+              <span>Subtotal:</span>
+              <span>{{ formatPrice(orderSummary.subtotal) }}</span>
+            </div>
+            <div class="d-flex justify-content-between mb-2">
+              <span>Tax:</span>
+              <span>{{ formatPrice(orderSummary.tax) }}</span>
+            </div>
+            <div class="d-flex justify-content-between mb-2">
+              <span>Shipping:</span>
+              <span>{{ formatPrice(orderSummary.shipping) }}</span>
+            </div>
+            <div class="d-flex justify-content-between mb-2" *ngIf="orderSummary.discount > 0">
+              <span class="text-success">Discount:</span>
+              <span class="text-success">-{{ formatPrice(orderSummary.discount) }}</span>
+            </div>
+            
+            <mat-divider class="my-3"></mat-divider>
+            
+            <div class="d-flex justify-content-between fs-5 fw-bold">
+              <span>Total:</span>
+              <span>{{ formatPrice(orderSummary.total) }}</span>
+            </div>
+          </mat-card-content>
+        </mat-card>
+      </div>
+    </div>
+
+    <!-- Empty Cart Message -->
+    <div class="row" *ngIf="!cart || cart.items.length === 0">
+      <div class="col-12 text-center py-5">
+        <mat-icon style="font-size: 64px; width: 64px; height: 64px;" class="text-muted mb-3">
+          shopping_cart
+        </mat-icon>
+        <h3 class="text-muted">Your cart is empty</h3>
+        <p class="text-muted mb-4">Add some items to your cart to proceed with checkout</p>
+        <a mat-raised-button color="primary" routerLink="/products">
+          <mat-icon>shopping_bag</mat-icon>
+          Continue Shopping
+        </a>
+      </div>
+    </div>
+  </div>
+</div>

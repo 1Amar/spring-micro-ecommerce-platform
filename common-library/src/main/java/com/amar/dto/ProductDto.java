@@ -75,6 +75,9 @@ public class ProductDto {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     
+    // Real-time inventory information from inventory-service
+    private InventoryDto inventory;
+    
     // Constructors
     public ProductDto() {}
     
@@ -359,5 +362,56 @@ public class ProductDto {
     
     public void setIsBestSeller(Boolean isBestSeller) {
         this.isBestSeller = isBestSeller;
+    }
+    
+    // Inventory getter/setter
+    public InventoryDto getInventory() {
+        return inventory;
+    }
+    
+    public void setInventory(InventoryDto inventory) {
+        this.inventory = inventory;
+    }
+    
+    // Helper methods for inventory status
+    public boolean hasRealTimeInventory() {
+        return inventory != null;
+    }
+    
+    public boolean isAvailableInInventory() {
+        return hasRealTimeInventory() && inventory.getAvailableQuantity() != null && inventory.getAvailableQuantity() > 0;
+    }
+    
+    public boolean isLowStockInInventory() {
+        return hasRealTimeInventory() && Boolean.TRUE.equals(inventory.getIsLowStock());
+    }
+    
+    public boolean isOutOfStockInInventory() {
+        return hasRealTimeInventory() && Boolean.TRUE.equals(inventory.getIsOutOfStock());
+    }
+    
+    public String getInventoryStockStatus() {
+        return hasRealTimeInventory() ? inventory.getStockStatus() : "UNKNOWN";
+    }
+    
+    public Integer getAvailableQuantity() {
+        return hasRealTimeInventory() ? inventory.getAvailableQuantity() : null;
+    }
+    
+    public String getStockMessage() {
+        if (!hasRealTimeInventory()) {
+            return "Stock information unavailable";
+        }
+        
+        if (isOutOfStockInInventory()) {
+            return "Out of stock";
+        } else if (isLowStockInInventory()) {
+            Integer available = getAvailableQuantity();
+            return available != null ? "Only " + available + " left in stock" : "Low stock";
+        } else if (isAvailableInInventory()) {
+            return "In stock";
+        } else {
+            return "Unavailable";
+        }
     }
 }

@@ -17,12 +17,20 @@ export class OrderService {
     return this.http.post<Order>(`${this.apiUrl}`, request);
   }
 
-  getOrders(page: number = 0, size: number = 20): Observable<{ orders: Order[], totalItems: number }> {
+  getOrders(page: number = 0, size: number = 20): Observable<{ content: Order[], totalElements: number }> {
     const params = new HttpParams()
       .set('page', page.toString())
       .set('size', size.toString());
 
-    return this.http.get<{ orders: Order[], totalItems: number }>(`${this.apiUrl}`, { params });
+    return this.http.get<{ content: Order[], totalElements: number }>(`${this.apiUrl}`, { params });
+  }
+
+  getOrdersByUser(userId: string, page: number = 0, size: number = 20): Observable<{ content: Order[], totalElements: number }> {
+    const params = new HttpParams()
+      .set('page', page.toString())
+      .set('size', size.toString());
+
+    return this.http.get<{ content: Order[], totalElements: number }>(`${this.apiUrl}/user/${userId}`, { params });
   }
 
   getOrder(orderId: string): Observable<Order> {
@@ -34,8 +42,12 @@ export class OrderService {
   }
 
   cancelOrder(orderId: string, reason?: string): Observable<Order> {
-    const body = reason ? { reason } : {};
-    return this.http.post<Order>(`${this.apiUrl}/${orderId}/cancel`, body);
+    const params = reason ? new HttpParams().set('reason', reason) : new HttpParams();
+    return this.http.put<Order>(`${this.apiUrl}/${orderId}/cancel`, {}, { params });
+  }
+
+  confirmOrder(orderId: string): Observable<Order> {
+    return this.http.put<Order>(`${this.apiUrl}/${orderId}/confirm`, {});
   }
 
   requestRefund(orderId: string, reason: string, items?: string[]): Observable<Order> {

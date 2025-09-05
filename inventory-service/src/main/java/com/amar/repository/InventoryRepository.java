@@ -1,6 +1,5 @@
 package com.amar.repository;
 
-import com.amar.entity.Inventory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -9,6 +8,8 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+
+import com.amar.entity.inventory.Inventory;
 
 import jakarta.persistence.LockModeType;
 import java.util.List;
@@ -49,8 +50,8 @@ public interface InventoryRepository extends JpaRepository<Inventory, UUID> {
     @Query("SELECT i FROM Inventory i WHERE i.availableQuantity <= :threshold")
     List<Inventory> findProductsBelowThreshold(@Param("threshold") Integer threshold);
     
-    // Find low stock items (alias for findProductsBelowThreshold)
-    @Query("SELECT i FROM Inventory i WHERE i.availableQuantity <= :threshold")
+    // Find low stock items (distinct by product ID to avoid duplicates)
+    @Query("SELECT i FROM Inventory i WHERE i.availableQuantity <= :threshold AND i.id IN (SELECT MIN(i2.id) FROM Inventory i2 WHERE i2.productId = i.productId)")
     List<Inventory> findLowStockItems(@Param("threshold") Integer threshold);
     
     // Find products with available quantity between range

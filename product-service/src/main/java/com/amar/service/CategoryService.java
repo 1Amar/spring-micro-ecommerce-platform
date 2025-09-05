@@ -1,11 +1,7 @@
 package com.amar.service;
 
-import com.amar.dto.CategoryDto;
-import com.amar.entity.Category;
-import com.amar.repository.CategoryRepository;
-import com.amar.exception.ResourceNotFoundException;
-import com.amar.exception.DuplicateResourceException;
-import com.amar.mapper.CategoryMapperMS;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,8 +12,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
-import java.util.List;
-import java.util.stream.Collectors;
+import com.amar.dto.CategoryDto;
+import com.amar.entity.product.Category;
+import com.amar.exception.DuplicateResourceException;
+import com.amar.exception.ResourceNotFoundException;
+import com.amar.mapper.CategoryMapperMS;
+import com.amar.repository.CategoryRepository;
 
 @Service
 @Transactional

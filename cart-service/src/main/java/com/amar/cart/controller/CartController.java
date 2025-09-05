@@ -143,6 +143,98 @@ public class CartController {
         return ResponseEntity.ok(Map.of("count", count));
     }
     
+    // INVENTORY INTEGRATION ENDPOINTS
+    
+    @GetMapping("/with-inventory")
+    public ResponseEntity<CartDto> getCartWithInventory(
+            @RequestHeader(value = "X-User-Id", required = false) String userId,
+            @CookieValue(value = "cart-session", required = false) String sessionId,
+            HttpServletResponse response) {
+        
+        log.debug("Getting cart with inventory info - UserId: {}, SessionId: {}", userId, sessionId);
+        
+        // Generate session ID for anonymous users if not present
+        if (userId == null && sessionId == null) {
+            sessionId = generateSessionId();
+            setSessionCookie(response, sessionId);
+            log.debug("Generated new session ID for anonymous user: {}", sessionId);
+        }
+        
+        CartDto cart = cartService.getCartWithInventoryInfo(userId, sessionId);
+        log.info("Retrieved cart with inventory info - Items: {}, Total: {}", cart.getItemCount(), cart.getTotalAmount());
+        
+        return ResponseEntity.ok(cart);
+    }
+    
+    @PostMapping("/validate-inventory")
+    public ResponseEntity<Map<String, Object>> validateCartInventory(
+            @RequestHeader(value = "X-User-Id", required = false) String userId,
+            @CookieValue(value = "cart-session", required = false) String sessionId) {
+        
+        log.debug("Validating cart inventory - UserId: {}, SessionId: {}", userId, sessionId);
+        
+        if (userId == null && sessionId == null) {
+            return ResponseEntity.ok(Map.of("valid", true, "message", "Empty cart"));
+        }
+        
+        boolean isValid = cartService.validateCartInventory(userId, sessionId);
+        String message = isValid ? "All items available" : "Some items are out of stock";
+        
+        return ResponseEntity.ok(Map.of(
+            "valid", isValid,
+            "message", message,
+            "timestamp", Instant.now().toString()
+        ));
+    }
+    
+    @PostMapping("/reserve-stock")
+    public ResponseEntity<Map<String, Object>> reserveCartStock(
+            @RequestHeader(value = "X-User-Id", required = false) String userId,
+            @CookieValue(value = "cart-session", required = false) String sessionId) {
+        
+        log.info("Reserving cart stock - UserId: {}, SessionId: {}", userId, sessionId);
+        
+        if (userId == null && sessionId == null) {
+            return ResponseEntity.badRequest().body(Map.of(
+                "reserved", false, 
+                "message", "No user or session provided"
+            ));
+        }
+        
+        boolean reserved = cartService.reserveCartStock(userId, sessionId);
+        String message = reserved ? "Stock reserved successfully" : "Failed to reserve stock";
+        
+        return ResponseEntity.ok(Map.of(
+            "reserved", reserved,
+            "message", message,
+            "timestamp", Instant.now().toString()
+        ));
+    }
+    
+    @PostMapping("/release-reservation")
+    public ResponseEntity<Map<String, Object>> releaseCartReservation(
+            @RequestHeader(value = "X-User-Id", required = false) String userId,
+            @CookieValue(value = "cart-session", required = false) String sessionId) {
+        
+        log.info("Releasing cart stock reservation - UserId: {}, SessionId: {}", userId, sessionId);
+        
+        if (userId == null && sessionId == null) {
+            return ResponseEntity.badRequest().body(Map.of(
+                "released", false, 
+                "message", "No user or session provided"
+            ));
+        }
+        
+        boolean released = cartService.releaseCartReservation(userId, sessionId);
+        String message = released ? "Reservation released successfully" : "Failed to release reservation";
+        
+        return ResponseEntity.ok(Map.of(
+            "released", released,
+            "message", message,
+            "timestamp", Instant.now().toString()
+        ));
+    }
+
     @GetMapping("/health")
     public ResponseEntity<Map<String, String>> health() {
         return ResponseEntity.ok(Map.of(

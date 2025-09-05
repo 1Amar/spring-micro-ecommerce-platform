@@ -5,32 +5,73 @@ export interface Order {
   status: OrderStatus;
   items: OrderItem[];
   subtotal: number;
-  tax: number;
-  shipping: number;
-  discount: number;
-  total: number;
-  currency: string;
-  shippingAddress: Address;
-  billingAddress?: Address;
-  paymentMethod: PaymentMethod;
+  taxAmount: number;
+  shippingCost: number;
+  discountAmount: number;
+  totalAmount: number;
+  paymentMethod: string;
   paymentStatus: PaymentStatus;
+  paymentTransactionId?: string;
+  customerEmail: string;
+  customerPhone?: string;
+  
+  // Billing address
+  billingFirstName?: string;
+  billingLastName?: string;
+  billingCompany?: string;
+  billingStreet?: string;
+  billingCity?: string;
+  billingState?: string;
+  billingPostalCode?: string;
+  billingCountry?: string;
+  
+  // Shipping address  
+  shippingFirstName?: string;
+  shippingLastName?: string;
+  shippingCompany?: string;
+  shippingStreet?: string;
+  shippingCity?: string;
+  shippingState?: string;
+  shippingPostalCode?: string;
+  shippingCountry?: string;
+  
+  shippingMethod?: string;
   trackingNumber?: string;
-  estimatedDelivery?: Date;
+  carrier?: string;
+  
   createdAt: Date;
   updatedAt: Date;
+  shippedAt?: Date;
+  deliveredAt?: Date;
+  cancelledAt?: Date;
+  
   notes?: string;
+  adminNotes?: string;
+  cancellationReason?: string;
+  fulfillmentStatus?: string;
 }
 
 export interface OrderItem {
   id: string;
-  productId: string;
+  orderId: string;
+  productId: number;
   productName: string;
-  productImage: string;
-  sku: string;
+  productSku: string;
+  productDescription?: string;
+  productImageUrl?: string;
+  productBrand?: string;
+  productCategory?: string;
   quantity: number;
   unitPrice: number;
   totalPrice: number;
-  specifications?: { [key: string]: string };
+  listPrice?: number;
+  discountAmount?: number;
+  taxAmount?: number;
+  fulfillmentStatus?: string;
+  quantityShipped?: number;
+  quantityDelivered?: number;
+  quantityCancelled?: number;
+  quantityReturned?: number;
 }
 
 export enum OrderStatus {
@@ -46,9 +87,10 @@ export enum OrderStatus {
 export enum PaymentStatus {
   PENDING = 'PENDING',
   PROCESSING = 'PROCESSING',
-  COMPLETED = 'COMPLETED',
+  PAID = 'PAID',
   FAILED = 'FAILED',
-  REFUNDED = 'REFUNDED'
+  REFUNDED = 'REFUNDED',
+  PARTIALLY_REFUNDED = 'PARTIALLY_REFUNDED'
 }
 
 export interface Address {
@@ -78,17 +120,47 @@ export interface PaymentMethod {
 }
 
 export interface CreateOrderRequest {
-  items: CartItem[];
-  shippingAddress: Address;
-  billingAddress?: Address;
-  paymentMethodId: string;
+  userId: string;
+  cartId?: string;
+  items: CreateOrderItemRequest[];
+  paymentMethod: string;
+  customerEmail: string;
+  customerPhone?: string;
+  
+  // Billing address
+  billingFirstName: string;
+  billingLastName: string;
+  billingCompany?: string;
+  billingStreet: string;
+  billingCity: string;
+  billingState: string;
+  billingPostalCode: string;
+  billingCountry: string;
+  
+  // Shipping address
+  shippingFirstName: string;
+  shippingLastName: string;
+  shippingCompany?: string;
+  shippingStreet: string;
+  shippingCity: string;
+  shippingState: string;
+  shippingPostalCode: string;
+  shippingCountry: string;
+  
+  shippingMethod?: string;
+  sameAsBilling: boolean;
   notes?: string;
+  couponCode?: string;
+  expectedTotal?: number;
 }
 
-export interface CartItem {
-  productId: string;
+export interface CreateOrderItemRequest {
+  productId: number;
   quantity: number;
-  specifications?: { [key: string]: string };
+  unitPrice: number;
+  productName?: string;
+  productSku?: string;
+  productImageUrl?: string;
 }
 
 export interface OrderSummary {

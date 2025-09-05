@@ -1,6 +1,6 @@
 package com.amar.dto;
 
-import com.amar.entity.UserAddress;
+import com.amar.entity.user.UserAddress;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
