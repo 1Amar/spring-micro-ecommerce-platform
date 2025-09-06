@@ -1,0 +1,397 @@
+.search-page-container {
+  background-color: #f8f9fa;
+  min-height: 100vh;
+}
+
+.search-header {
+  border-bottom: 1px solid #dee2e6;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.filters-panel {
+  position: sticky;
+  top: 120px;
+  max-height: calc(100vh - 140px);
+  overflow-y: auto;
+  border: 1px solid #dee2e6;
+
+  .filter-group {
+    border-bottom: 1px solid #f1f3f4;
+    padding-bottom: 1rem;
+
+    &:last-child {
+      border-bottom: none;
+      margin-bottom: 0;
+    }
+
+    .form-label {
+      color: #495057;
+      font-size: 0.875rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+  }
+
+  .recent-searches {
+    border-top: 1px solid #f1f3f4;
+    padding-top: 1rem;
+
+    .recent-search-tags {
+      max-height: 120px;
+      overflow-y: auto;
+    }
+  }
+}
+
+// Product Cards (Grid View)
+.product-card {
+  transition: all 0.3s ease;
+  border: 1px solid #e9ecef;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1) !important;
+    border-color: #007bff;
+  }
+
+  .product-image-container {
+    position: relative;
+    overflow: hidden;
+    height: 200px;
+    
+    .product-image {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.3s ease;
+    }
+
+    .product-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    &:hover {
+      .product-image {
+        transform: scale(1.05);
+      }
+      
+      .product-overlay {
+        opacity: 1;
+      }
+    }
+  }
+
+  .card-body {
+    padding: 1rem;
+  }
+
+  .card-title {
+    font-size: 0.9rem;
+    font-weight: 600;
+    line-height: 1.3;
+    color: #212529;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .card-text {
+    font-size: 0.8rem;
+    line-height: 1.4;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .product-meta {
+    .badge {
+      font-size: 0.7rem;
+      padding: 0.25em 0.5em;
+    }
+  }
+
+  .price {
+    font-size: 1.1rem;
+  }
+}
+
+// Product List Items (List View)
+.product-list-item {
+  transition: all 0.3s ease;
+  border: 1px solid #e9ecef;
+
+  &:hover {
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+    border-color: #007bff;
+  }
+
+  .product-list-image {
+    height: 120px;
+    width: 100%;
+    object-fit: cover;
+  }
+
+  .card-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #212529;
+    margin-bottom: 0.5rem;
+  }
+
+  .card-text {
+    color: #6c757d;
+    font-size: 0.9rem;
+    line-height: 1.5;
+  }
+
+  .product-meta {
+    .badge {
+      font-size: 0.75rem;
+      padding: 0.25em 0.5em;
+    }
+  }
+
+  .price {
+    margin-bottom: 1rem;
+  }
+
+  .product-actions {
+    .btn {
+      font-size: 0.875rem;
+    }
+  }
+}
+
+// Results Info & Sorting
+.results-info {
+  font-size: 0.875rem;
+  color: #6c757d;
+}
+
+.sort-buttons {
+  .btn-group-sm .btn {
+    font-size: 0.8rem;
+    padding: 0.25rem 0.5rem;
+
+    mat-icon {
+      font-size: 1rem;
+      width: 1rem;
+      height: 1rem;
+    }
+
+    &.active {
+      background-color: #007bff;
+      border-color: #007bff;
+      color: white;
+    }
+  }
+}
+
+// View Toggle Buttons
+.btn-group .btn {
+  mat-icon {
+    font-size: 1.2rem;
+    width: 1.2rem;
+    height: 1.2rem;
+  }
+
+  &.active {
+    background-color: #007bff;
+    border-color: #007bff;
+    color: white;
+  }
+}
+
+// Filter Toggle Button
+.btn-outline-primary.active {
+  background-color: #007bff;
+  border-color: #007bff;
+  color: white;
+}
+
+// Custom Pagination
+.custom-paginator {
+  background: white;
+  border-radius: 0.375rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border: 1px solid #dee2e6;
+}
+
+// Loading Spinner
+.spinner-border {
+  width: 3rem;
+  height: 3rem;
+}
+
+// Error Alert
+.alert-danger {
+  border-left: 4px solid #dc3545;
+  border-radius: 0.5rem;
+}
+
+// Empty State Icons
+mat-icon[style*="font-size: 4rem"] {
+  opacity: 0.5;
+}
+
+// Responsive Design
+@media (max-width: 768px) {
+  .search-header {
+    .col-md-4 {
+      text-align: center !important;
+      margin-top: 1rem;
+    }
+  }
+
+  .filters-panel {
+    position: static;
+    margin-bottom: 1rem;
+  }
+
+  .product-card {
+    .product-image-container {
+      height: 150px;
+    }
+  }
+
+  .product-list-item {
+    .product-list-image {
+      height: 100px;
+    }
+
+    .card-body {
+      padding: 0.75rem;
+    }
+  }
+
+  .sort-buttons {
+    margin-top: 0.5rem;
+    
+    .btn-group {
+      width: 100%;
+      
+      .btn {
+        flex: 1;
+      }
+    }
+  }
+
+  .results-info {
+    text-align: center;
+    margin-bottom: 1rem;
+  }
+}
+
+@media (max-width: 576px) {
+  .search-page-container {
+    .container-fluid {
+      padding: 0.5rem;
+    }
+  }
+
+  .search-header {
+    .row {
+      text-align: center;
+    }
+    
+    h1 {
+      font-size: 1.5rem;
+    }
+    
+    .btn-group {
+      width: 100%;
+      margin-bottom: 0.5rem;
+    }
+  }
+
+  .filters-panel {
+    .filter-group {
+      margin-bottom: 1rem;
+    }
+  }
+
+  .product-actions {
+    .btn {
+      width: 100%;
+      margin-bottom: 0.5rem;
+
+      &:last-child {
+        margin-bottom: 0;
+      }
+    }
+  }
+}
+
+// Dark mode support (if implemented)
+@media (prefers-color-scheme: dark) {
+  .search-page-container {
+    background-color: #1a1a1a;
+  }
+
+  .search-header,
+  .filters-panel,
+  .product-card,
+  .product-list-item {
+    background-color: #2d2d2d;
+    border-color: #404040;
+  }
+
+  .card-title,
+  .form-label {
+    color: #ffffff;
+  }
+
+  .card-text,
+  .text-muted {
+    color: #b0b0b0 !important;
+  }
+}
+
+// Animation for filter panel
+.filters-panel {
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+// Custom scrollbar for filter panel
+.filters-panel::-webkit-scrollbar {
+  width: 6px;
+}
+
+.filters-panel::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.filters-panel::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+.filters-panel::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}

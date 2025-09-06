@@ -57,6 +57,9 @@ public class ReactiveSecurityConfig {
                 // Manager endpoints - Requires manager or admin role
                 .pathMatchers("/api/v1/manager/**").hasAnyRole("admin", "manager")
                 
+                // Public search endpoints - No authentication required for better UX
+                .pathMatchers("/api/v1/search/**").permitAll()
+                
                 // All microservice endpoints - Requires authentication (any valid user)
                 .pathMatchers("/api/v1/order/**").authenticated()
                 .pathMatchers("/api/v1/orders/**").authenticated()
@@ -66,7 +69,6 @@ public class ReactiveSecurityConfig {
                 .pathMatchers("/api/v1/payments/**").authenticated()
                 .pathMatchers("/api/v1/notifications/**").authenticated()
                 .pathMatchers("/api/v1/catalog/**").authenticated()
-                .pathMatchers("/api/v1/search/**").authenticated()
                 .pathMatchers("/api/v1/cart/**").authenticated() // Cart service endpoints
                 
                 // Catch-all - Requires authentication

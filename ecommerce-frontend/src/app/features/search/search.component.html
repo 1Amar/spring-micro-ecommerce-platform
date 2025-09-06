@@ -1,0 +1,343 @@
+<div class="search-page-container">
+  <!-- Search Header -->
+  <div class="search-header bg-white shadow-sm p-3 mb-4">
+    <div class="container-fluid">
+      <div class="row align-items-center">
+        <div class="col-md-8">
+          <h1 class="h4 mb-0">Search Results</h1>
+          <p class="text-muted mb-0" *ngIf="currentQuery">
+            <span *ngIf="!isLoading && totalElements > 0">
+              {{ totalElements }} results for "<strong>{{ currentQuery }}</strong>"
+              <small class="text-muted" *ngIf="searchResponse?.searchDuration">
+                ({{ searchResponse?.searchDuration }}ms)
+              </small>
+            </span>
+            <span *ngIf="!isLoading && totalElements === 0">
+              No results found for "<strong>{{ currentQuery }}</strong>"
+            </span>
+            <span *ngIf="isLoading">
+              Searching for "<strong>{{ currentQuery }}</strong>"...
+            </span>
+          </p>
+        </div>
+        <div class="col-md-4 text-end">
+          <!-- View Toggle -->
+          <div class="btn-group me-2" role="group">
+            <button type="button" 
+                    class="btn btn-outline-secondary" 
+                    [class.active]="viewMode === 'grid'"
+                    (click)="toggleViewMode()"
+                    title="Grid View">
+              <mat-icon>grid_view</mat-icon>
+            </button>
+            <button type="button" 
+                    class="btn btn-outline-secondary" 
+                    [class.active]="viewMode === 'list'"
+                    (click)="toggleViewMode()"
+                    title="List View">
+              <mat-icon>view_list</mat-icon>
+            </button>
+          </div>
+          <!-- Filter Toggle -->
+          <button class="btn btn-outline-primary" 
+                  (click)="toggleFilters()"
+                  [class.active]="showFilters">
+            <mat-icon>tune</mat-icon>
+            Filters
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="container-fluid">
+    <div class="row">
+      <!-- Filters Sidebar -->
+      <div class="col-lg-3 col-md-4" [class.d-none]="!showFilters" [class.d-md-block]="showFilters">
+        <div class="filters-panel bg-white rounded shadow-sm p-3 mb-4">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="mb-0">Filters</h5>
+            <button class="btn btn-sm btn-outline-secondary" (click)="clearFilters()">
+              Clear All
+            </button>
+          </div>
+
+          <form [formGroup]="filterForm" (ngSubmit)="onFilterChange()">
+            <!-- Category Filter -->
+            <div class="filter-group mb-3" *ngIf="availableCategories.length > 0">
+              <label class="form-label fw-bold">Category</label>
+              <select class="form-select" formControlName="category" (change)="onFilterChange()">
+                <option value="">All Categories</option>
+                <option *ngFor="let category of availableCategories" [value]="category">
+                  {{ category }}
+                </option>
+              </select>
+            </div>
+
+            <!-- Brand Filter -->
+            <div class="filter-group mb-3" *ngIf="availableBrands.length > 0">
+              <label class="form-label fw-bold">Brand</label>
+              <select class="form-select" formControlName="brand" (change)="onFilterChange()">
+                <option value="">All Brands</option>
+                <option *ngFor="let brand of availableBrands" [value]="brand">
+                  {{ brand }}
+                </option>
+              </select>
+            </div>
+
+            <!-- Price Range Filter -->
+            <div class="filter-group mb-3">
+              <label class="form-label fw-bold">Price Range</label>
+              <div class="row g-2">
+                <div class="col-6">
+                  <div class="input-group">
+                    <span class="input-group-text">$</span>
+                    <input type="number" 
+                           class="form-control" 
+                           placeholder="Min" 
+                           formControlName="minPrice"
+                           (change)="onFilterChange()" 
+                           min="0" 
+                           step="0.01">
+                  </div>
+                </div>
+                <div class="col-6">
+                  <div class="input-group">
+                    <span class="input-group-text">$</span>
+                    <input type="number" 
+                           class="form-control" 
+                           placeholder="Max" 
+                           formControlName="maxPrice"
+                           (change)="onFilterChange()" 
+                           min="0" 
+                           step="0.01">
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Sort Options -->
+            <div class="filter-group mb-3">
+              <label class="form-label fw-bold">Sort By</label>
+              <select class="form-select" formControlName="sortBy" (change)="onFilterChange()">
+                <option *ngFor="let option of sortOptions" [value]="option.value">
+                  {{ option.label }}
+                </option>
+              </select>
+            </div>
+
+            <!-- Sort Direction -->
+            <div class="filter-group mb-3">
+              <label class="form-label fw-bold">Order</label>
+              <select class="form-select" formControlName="sortDirection" (change)="onFilterChange()">
+                <option value="asc">Ascending</option>
+                <option value="desc">Descending</option>
+              </select>
+            </div>
+          </form>
+
+          <!-- Recent Searches -->
+          <div class="recent-searches mt-4" *ngIf="recentSearches.length > 0">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <h6 class="mb-0">Recent Searches</h6>
+              <button class="btn btn-sm btn-link text-muted p-0" 
+                      (click)="clearRecentSearches()"
+                      title="Clear recent searches">
+                <mat-icon class="small">clear</mat-icon>
+              </button>
+            </div>
+            <div class="recent-search-tags">
+              <button class="btn btn-sm btn-outline-secondary me-1 mb-1" 
+                      *ngFor="let search of recentSearches.slice(0, 5)"
+                      (click)="onRecentSearchClick(search)">
+                {{ search }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Main Content -->
+      <div class="col-lg-9 col-md-8">
+        <!-- Loading State -->
+        <div *ngIf="isLoading" class="text-center py-5">
+          <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+          </div>
+          <p class="mt-2 text-muted">Searching products...</p>
+        </div>
+
+        <!-- Error State -->
+        <div *ngIf="hasError && !isLoading" class="alert alert-danger d-flex align-items-center">
+          <mat-icon class="me-2">error</mat-icon>
+          <div class="flex-grow-1">
+            <strong>Search Failed</strong><br>
+            {{ errorMessage }}
+          </div>
+          <button class="btn btn-outline-danger btn-sm" (click)="retrySearch()">
+            Retry
+          </button>
+        </div>
+
+        <!-- No Results -->
+        <div *ngIf="!isLoading && !hasError && products.length === 0 && currentQuery" 
+             class="text-center py-5">
+          <mat-icon class="text-muted" style="font-size: 4rem; height: 4rem; width: 4rem;">search_off</mat-icon>
+          <h3 class="text-muted mt-3">No products found</h3>
+          <p class="text-muted">Try adjusting your search terms or filters</p>
+          <button class="btn btn-primary" (click)="clearFilters()">
+            Clear Filters
+          </button>
+        </div>
+
+        <!-- Search Results -->
+        <div *ngIf="!isLoading && !hasError && products.length > 0">
+          <!-- Sort Header -->
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <div class="results-info">
+              <small class="text-muted">
+                Showing {{ (currentPage * pageSize) + 1 }}-{{ Math.min((currentPage + 1) * pageSize, totalElements) }} 
+                of {{ totalElements }} results
+              </small>
+            </div>
+            <div class="sort-buttons">
+              <div class="btn-group btn-group-sm">
+                <button *ngFor="let option of sortOptions" 
+                        type="button" 
+                        class="btn btn-outline-secondary"
+                        [class.active]="sortBy === option.value"
+                        (click)="onSortChange(option.value)">
+                  {{ option.label }}
+                  <mat-icon *ngIf="sortBy === option.value" class="ms-1 small">
+                    {{ sortDirection === 'asc' ? 'arrow_upward' : 'arrow_downward' }}
+                  </mat-icon>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Grid View -->
+          <div *ngIf="viewMode === 'grid'" class="row g-3">
+            <div *ngFor="let product of products; trackBy: trackByProductId" 
+                 class="col-xl-3 col-lg-4 col-md-6">
+              <div class="card product-card h-100 shadow-sm">
+                <div class="product-image-container">
+                  <img [src]="product.imageUrl || '/assets/images/no-image.png'" 
+                       [alt]="product.name"
+                       class="card-img-top product-image"
+                       (error)="setDefaultImage($event)">
+                  <div class="product-overlay">
+                    <button class="btn btn-primary btn-sm" (click)="onViewProduct(product)">
+                      <mat-icon>visibility</mat-icon>
+                      View
+                    </button>
+                  </div>
+                </div>
+                <div class="card-body d-flex flex-column">
+                  <h6 class="card-title mb-2">{{ product.name }}</h6>
+                  <p class="card-text text-muted small mb-2" *ngIf="product.description">
+                    {{ getTruncatedDescription(product.description, 60) }}
+                  </p>
+                  <div class="product-meta mb-2">
+                    <span class="badge bg-secondary me-1" *ngIf="product.brand">{{ product.brand }}</span>
+                    <span class="badge bg-info" *ngIf="product.categoryName">{{ product.categoryName }}</span>
+                  </div>
+                  <div class="mt-auto">
+                    <div class="d-flex justify-content-between align-items-center">
+                      <div class="price">
+                        <span class="fw-bold text-success">{{ getFormattedPrice(product.price) }}</span>
+                      </div>
+                      <button class="btn btn-primary btn-sm" 
+                              (click)="onAddToCart(product)"
+                              [disabled]="isLoading">
+                        <mat-icon>add_shopping_cart</mat-icon>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- List View -->
+          <div *ngIf="viewMode === 'list'" class="list-view">
+            <div *ngFor="let product of products; trackBy: trackByProductId" 
+                 class="card product-list-item mb-3 shadow-sm">
+              <div class="row g-0">
+                <div class="col-md-3 col-lg-2">
+                  <img [src]="product.imageUrl || '/assets/images/no-image.png'"
+                       [alt]="product.name"
+                       class="img-fluid product-list-image"
+                       (error)="setDefaultImage($event)">
+                </div>
+                <div class="col-md-9 col-lg-10">
+                  <div class="card-body">
+                    <div class="row align-items-center">
+                      <div class="col-lg-8">
+                        <h6 class="card-title mb-2">{{ product.name }}</h6>
+                        <p class="card-text text-muted mb-2" *ngIf="product.description">
+                          {{ getTruncatedDescription(product.description, 150) }}
+                        </p>
+                        <div class="product-meta">
+                          <span class="badge bg-secondary me-2" *ngIf="product.brand">{{ product.brand }}</span>
+                          <span class="badge bg-info me-2" *ngIf="product.categoryName">{{ product.categoryName }}</span>
+                          <small class="text-muted" *ngIf="product.sku">SKU: {{ product.sku }}</small>
+                        </div>
+                      </div>
+                      <div class="col-lg-4 text-lg-end">
+                        <div class="price mb-2">
+                          <span class="h5 fw-bold text-success">{{ getFormattedPrice(product.price) }}</span>
+                        </div>
+                        <div class="product-actions">
+                          <button class="btn btn-outline-primary btn-sm me-2" 
+                                  (click)="onViewProduct(product)">
+                            <mat-icon>visibility</mat-icon>
+                            View
+                          </button>
+                          <button class="btn btn-primary btn-sm" 
+                                  (click)="onAddToCart(product)"
+                                  [disabled]="isLoading">
+                            <mat-icon>add_shopping_cart</mat-icon>
+                            Add to Cart
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Pagination -->
+          <div class="d-flex justify-content-center mt-4" *ngIf="totalPages > 1">
+            <mat-paginator
+              [length]="totalElements"
+              [pageSize]="pageSize"
+              [pageIndex]="currentPage"
+              [pageSizeOptions]="[10, 20, 50, 100]"
+              [showFirstLastButtons]="true"
+              (page)="onPageChange($event)"
+              class="custom-paginator">
+            </mat-paginator>
+          </div>
+        </div>
+
+        <!-- Initial State (no search performed) -->
+        <div *ngIf="!currentQuery && !isLoading" class="text-center py-5">
+          <mat-icon class="text-muted" style="font-size: 4rem; height: 4rem; width: 4rem;">search</mat-icon>
+          <h3 class="text-muted mt-3">Start your search</h3>
+          <p class="text-muted">Use the search bar above to find products</p>
+          <div *ngIf="recentSearches.length > 0" class="mt-4">
+            <p class="text-muted mb-2">Or try one of your recent searches:</p>
+            <button class="btn btn-outline-primary me-2 mb-2" 
+                    *ngFor="let search of recentSearches.slice(0, 3)"
+                    (click)="onRecentSearchClick(search)">
+              {{ search }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
