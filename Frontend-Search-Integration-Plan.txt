@@ -1,0 +1,116 @@
+Frontend Search Integration Plan
+
+     Phase 1: Backend Integration & Service Updates
+
+     Goal: Connect frontend to the new search service backend
+
+     1. Create Search Service (New Dedicated Service)
+
+     - Create SearchService in @core/services/search.service.ts
+     - Implement methods to call search backend endpoints:
+       - searchProducts(query, page, size, sortBy, sortDir)
+       - searchByBrand(brand, page, size)
+       - searchByCategory(category, page, size)
+       - getSearchStats()
+     - Handle authentication strategy (recommend making search public for better UX)
+     - Add proper error handling and loading states
+
+     2. Create Search Response Models
+
+     - Add ProductSearchDto interface matching backend response
+     - Add SearchResponseDto interface matching backend pagination
+     - Update existing models to work with search service responses
+
+     3. Authentication Strategy Decision
+
+     - Option A (Recommended): Make search endpoints public in API Gateway
+     - Option B: Handle JWT authentication for search requests
+     - Implement chosen strategy in both backend security config and frontend service
+
+     Phase 2: Search Results Page Implementation
+
+     Goal: Create comprehensive search results page with filtering
+
+     4. Implement Search Component
+
+     - Replace placeholder search.component.ts with full implementation
+     - Copy and adapt pagination/filtering logic from products.component.ts
+     - Implement search-specific features:
+       - Query parameter handling from URL
+       - Search result highlighting
+       - "No results" states
+       - Search suggestions/corrections
+
+     5. Search Results UI Features
+
+     - Header Section: Display search query and result count
+     - Filters Sidebar:
+       - Category filter
+       - Brand filter
+       - Price range filter
+       - Sort options (relevance, price, name, newest)
+     - Results Grid: Product cards with add to cart functionality
+     - Pagination: Full pagination with page size options
+     - Loading States: Skeleton loaders during search
+     - Error Handling: Network errors, empty results
+
+     6. Advanced Search Features
+
+     - Search Autocomplete: Optional dropdown suggestions
+     - Search History: Store recent searches in localStorage
+     - Filters from URL: Support direct links with filters applied
+     - Mobile Responsive: Collapsible filter sidebar
+
+     Phase 3: Enhanced User Experience
+
+     Goal: Polish the search experience
+
+     7. Performance Optimizations
+
+     - Implement debounced search (already in header component)
+     - Add search result caching for frequent queries
+     - Lazy load images in search results
+     - Virtual scrolling for large result sets (optional)
+
+     8. Integration Points
+
+     - Update header component search to pass additional context
+     - Ensure cart integration works from search results
+     - Add breadcrumb navigation
+     - SEO optimization for search result pages
+
+     Phase 4: Testing & Polish
+
+     Goal: Ensure robust implementation
+
+     9. Testing Strategy
+
+     - Unit tests for SearchService
+     - Component tests for SearchComponent
+     - E2E tests for search flow
+     - Manual testing with various search terms
+
+     10. Documentation & Cleanup
+
+     - Update environment configuration
+     - Add search service documentation
+     - Code review and optimization
+
+     Key Implementation Notes:
+
+     - Don't modify the existing /products page - it stays intact
+     - Reuse filtering/pagination patterns from products.component.ts
+     - Maintain existing cart integration and authentication flows
+     - Focus on the /search route as separate dedicated page
+     - Ensure mobile responsiveness and accessibility
+     - Implement proper loading states and error handling
+
+     Files to Create/Modify:
+
+     - src/app/core/services/search.service.ts (NEW)
+     - src/app/shared/models/search.model.ts (NEW)
+     - src/app/features/search/search.component.ts (REPLACE)
+     - src/app/features/search/search.component.html (NEW)
+     - src/app/features/search/search.component.scss (NEW)
+     - src/app/features/search/search-routing.module.ts (NEW)
+     - Update API Gateway security config (if making search public)

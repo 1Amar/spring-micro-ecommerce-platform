@@ -261,10 +261,13 @@ export class ELKTestComponent implements OnInit, OnDestroy {
   // Service status tracking
   services: ServiceStatus[] = [
     { name: 'API Gateway', url: '/public/health', status: 'offline', port: 8081 },
-    { name: 'Order Service', url: '/order/health', status: 'offline', port: 8084 },
-    { name: 'Inventory Service', url: '/inventory/health', status: 'offline', port: 8083 },
-    { name: 'Payment Service', url: '/payments/health', status: 'offline', port: 8085 },
-    { name: 'Product Service', url: '/products/health', status: 'offline', port: 8082 },
+    { name: 'Order Service', url: '/order/health', status: 'offline', port: 8083 },
+    { name: 'Inventory Service', url: '/inventory/health', status: 'offline', port: 8084 },
+    { name: 'Payment Service', url: '/payments/health', status: 'offline', port: 8087 },
+    { name: 'Product Service', url: '/products/health', status: 'offline', port: 8088 },
+    { name: 'Cart Service', url: '/cart/health', status: 'offline', port: 8089 },
+    { name: 'User Service', url: '/users/health', status: 'offline', port: 8082 },
+    { name: 'Search Service', url: '/search/health', status: 'offline', port: 8086 },
     { name: 'Notification Service', url: '/notifications/health', status: 'offline', port: 8086 }
   ];
   
@@ -448,6 +451,19 @@ export class ELKTestComponent implements OnInit, OnDestroy {
         'Payment Service Health Check',
         'payment-service',
         () => this.http.get(`${environment.apiUrl}/payments/health`)
+      );
+
+      // Step 3: Test Search Service
+      await this.executeStep(
+        'Search Service Query Test',
+        'search-service',
+        () => this.http.get(`${environment.apiUrl}/search/products?query=laptop&page=0&size=5`)
+      );
+
+      await this.executeStep(
+        'Search Service Statistics',
+        'search-service',
+        () => this.http.get(`${environment.apiUrl}/search/stats`)
       );
 
       console.log('🔗 Correlation ID Flow Test completed. Check Kibana for logs with correlation ID:', this.currentCorrelationId);
