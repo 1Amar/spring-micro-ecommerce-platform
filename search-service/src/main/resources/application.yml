@@ -3,6 +3,10 @@ spring:
     name: search-service
   profiles:
     include: observability
+  elasticsearch:
+    uris: http://localhost:9200
+    connection-timeout: 30s
+    socket-timeout: 30s
 
 server:
   port: 8086
