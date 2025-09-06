@@ -68,6 +68,14 @@ spring:
           uri: lb://search-service
           predicates:
             - Path=/api/v1/search/**
+            
+        # Health check route for search service (ELK test integration)
+        - id: search-health
+          uri: lb://search-service
+          predicates:
+            - Path=/search/health
+          filters:
+            - RewritePath=/search/health, /api/v1/search/health
       default-filters:
         - name: PreserveHostHeader
         # Circuit Breaker REMOVED - was causing 403 FORBIDDEN on healthy services
