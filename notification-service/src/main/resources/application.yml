@@ -3,6 +3,27 @@ spring:
     name: notification-service
   profiles:
     include: observability
+  
+  # Kafka Configuration
+  kafka:
+    bootstrap-servers: localhost:9092
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      properties:
+        spring.json.add.type.headers: false
+        spring.json.trusted.packages: "*"
+    consumer:
+      group-id: notification-service-group
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "*"
+        spring.json.use.type.headers: false
+      enable-auto-commit: false
+      auto-offset-reset: earliest
+    listener:
+      ack-mode: manual_immediate
 
 server:
   port: 8085
@@ -46,5 +67,25 @@ logging:
     console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%X{correlationId:-}] [%thread] %-5level %logger{36} - %msg%n"
   level:
     com.amar: DEBUG
+    org.springframework.kafka: INFO
+    org.apache.kafka: WARN
     com.netflix.eureka: OFF
     com.netflix.discovery: OFF
+
+# Notification Service Configuration
+notification:
+  channels:
+    email:
+      enabled: true
+      simulation-mode: true
+    sms:
+      enabled: true
+      simulation-mode: true
+    push:
+      enabled: false
+      simulation-mode: true
+  templates:
+    order-created: "Your order #{orderId} has been created successfully. Amount: ${amount}"
+    payment-completed: "Payment of ${amount} for order #{orderId} completed successfully"
+    payment-failed: "Payment for order #{orderId} failed. Please try again"
+    order-shipped: "Your order #{orderId} has been shipped and is on its way"

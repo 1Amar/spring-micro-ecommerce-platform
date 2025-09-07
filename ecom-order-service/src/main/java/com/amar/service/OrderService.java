@@ -195,6 +195,28 @@ public class OrderService {
                 } else {
                     logger.warn("Failed to clear cart after order: {}", request.getCartId());
                 }
+                
+                // Step 8a: Publish cart conversion event
+                try {
+                    String sessionId = extractSessionFromCartId(request.getCartId());
+                    boolean eventPublished = cartServiceClient.publishCartConversionEvent(
+                        request.getUserId(), 
+                        sessionId, 
+                        order.getId().toString()
+                    );
+                    
+                    if (eventPublished) {
+                        logger.info("Cart conversion event published for order: {} (cart: {})", 
+                                   order.getId(), request.getCartId());
+                    } else {
+                        logger.warn("Failed to publish cart conversion event for order: {} (cart: {})", 
+                                   order.getId(), request.getCartId());
+                    }
+                } catch (Exception ex) {
+                    logger.error("Error publishing cart conversion event for order: {} (cart: {})", 
+                               order.getId(), request.getCartId(), ex);
+                    // Don't fail the order creation if event publishing fails
+                }
             }
 
             // Step 9: Create status history
@@ -675,5 +697,285 @@ public class OrderService {
         dto.setQuantityCancelled(item.getQuantityCancelled());
         dto.setQuantityReturned(item.getQuantityReturned());
         return dto;
+    }
+
+    // =====================================================
+    // Payment Event Handler Methods (called by PaymentEventListener)
+    // =====================================================
+
+    @Transactional
+    public void updateOrderPaymentStatus(UUID orderId, String paymentStatus, String paymentId) {
+        logger.info("Updating payment status for order: {} to: {} (payment: {})", orderId, paymentStatus, paymentId);
+        
+        Optional<Order> orderOpt = orderRepository.findById(orderId);
+        if (orderOpt.isEmpty()) {
+            logger.error("Order not found for payment status update: {}", orderId);
+            throw new RuntimeException("Order not found: " + orderId);
+        }
+        
+        Order order = orderOpt.get();
+        String previousPaymentStatus = order.getPaymentStatus() != null ? order.getPaymentStatus().name() : "NONE";
+        
+        // Update payment status based on event
+        switch (paymentStatus) {
+            case "PAYMENT_INITIATED":
+                order.setPaymentStatus(PaymentStatus.PENDING);
+                break;
+            case "PAYMENT_COMPLETED":
+                order.setPaymentStatus(PaymentStatus.PAID);
+                order.setPaymentTransactionId(paymentId);
+                break;
+            case "PAYMENT_FAILED":
+                order.setPaymentStatus(PaymentStatus.FAILED);
+                break;
+            case "PAYMENT_REFUNDED":
+                order.setPaymentStatus(PaymentStatus.REFUNDED);
+                break;
+            case "PAYMENT_CANCELLED":
+                order.setPaymentStatus(PaymentStatus.FAILED); // Use FAILED for cancelled payments
+                break;
+            default:
+                logger.warn("Unknown payment status: {}", paymentStatus);
+                return;
+        }
+        
+        order.setUpdatedAt(LocalDateTime.now());
+        orderRepository.save(order);
+        
+        // Create status history
+        createStatusHistory(order, previousPaymentStatus, paymentStatus, 
+                          "Payment status updated via Kafka event", "SYSTEM");
+        
+        logger.info("Successfully updated payment status for order: {} from {} to {}", 
+                   orderId, previousPaymentStatus, paymentStatus);
+    }
+
+    @Transactional
+    public void processPaymentCompletedOrder(UUID orderId, String paymentId, String transactionId) {
+        logger.info("Processing payment completed for order: {} (payment: {}, transaction: {})", 
+                   orderId, paymentId, transactionId);
+        
+        Optional<Order> orderOpt = orderRepository.findById(orderId);
+        if (orderOpt.isEmpty()) {
+            logger.error("Order not found for payment completion processing: {}", orderId);
+            throw new RuntimeException("Order not found: " + orderId);
+        }
+        
+        Order order = orderOpt.get();
+        
+        try {
+            // Update order status to CONFIRMED (ready for fulfillment)
+            OrderStatus previousStatus = order.getStatus();
+            order.setStatus(OrderStatus.CONFIRMED);
+            // Note: paymentCompletedAt field doesn't exist in Order entity
+            order.setPaymentTransactionId(transactionId);
+            order.setUpdatedAt(LocalDateTime.now());
+            
+            orderRepository.save(order);
+            
+            // Create status history
+            createStatusHistory(order, previousStatus.name(), OrderStatus.CONFIRMED.name(), 
+                              "Order confirmed after successful payment", "SYSTEM");
+            
+            // Publish order confirmed event
+            List<OrderEventPublisher.OrderItem> eventItems = convertOrderItemsToEventItems(order.getItems());
+            eventPublisher.publishOrderConfirmed(orderId, order.getOrderNumber());
+            
+            // Commit inventory reservation (finalize the stock allocation)
+            try {
+                boolean committed = inventoryServiceClient.commitStock(orderId);
+                if (!committed) {
+                    logger.error("Failed to commit inventory reservation for order: {}", orderId);
+                    // Don't fail the entire order, but log for manual intervention
+                }
+                
+            } catch (Exception ex) {
+                logger.error("Error committing inventory reservation for order: {}", orderId, ex);
+                // Continue processing - payment is completed, inventory issue shouldn't block order
+            }
+            
+            logger.info("Successfully processed payment completed order: {}", orderId);
+            
+        } catch (Exception ex) {
+            logger.error("Failed to process payment completed order: {}", orderId, ex);
+            throw ex;
+        }
+    }
+
+    @Transactional 
+    public void processPaymentFailedOrder(UUID orderId, String paymentId, String errorCode, String errorMessage) {
+        logger.error("Processing payment failed for order: {} (payment: {}, error: {} - {})", 
+                    orderId, paymentId, errorCode, errorMessage);
+        
+        Optional<Order> orderOpt = orderRepository.findById(orderId);
+        if (orderOpt.isEmpty()) {
+            logger.error("Order not found for payment failure processing: {}", orderId);
+            throw new RuntimeException("Order not found: " + orderId);
+        }
+        
+        Order order = orderOpt.get();
+        
+        try {
+            // Update order status to CANCELLED (no PAYMENT_FAILED status exists)
+            OrderStatus previousStatus = order.getStatus();
+            order.setStatus(OrderStatus.CANCELLED);
+            order.setCancelledAt(LocalDateTime.now());
+            order.setCancellationReason("Payment failed: " + errorCode + " - " + errorMessage);
+            order.setUpdatedAt(LocalDateTime.now());
+            
+            orderRepository.save(order);
+            
+            // Create status history
+            createStatusHistory(order, previousStatus.name(), OrderStatus.CANCELLED.name(), 
+                              "Payment failed: " + errorMessage, "SYSTEM");
+            
+            // Publish payment failed event
+            eventPublisher.publishPaymentFailed(orderId, paymentId, errorMessage, errorCode);
+            
+            // Release inventory reservation
+            try {
+                boolean released = inventoryServiceClient.releaseReservation(orderId);
+                if (!released) {
+                    logger.error("Failed to release inventory reservation for failed payment order: {}", orderId);
+                    // Log for manual intervention
+                }
+                
+            } catch (Exception ex) {
+                logger.error("Error releasing inventory reservation for failed payment order: {}", orderId, ex);
+                // Continue processing - order status is updated, inventory cleanup can be manual
+            }
+            
+            logger.info("Successfully processed payment failed order: {}", orderId);
+            
+        } catch (Exception ex) {
+            logger.error("Failed to process payment failed order: {}", orderId, ex);
+            throw ex;
+        }
+    }
+
+    @Transactional
+    public void processRefundedOrder(UUID orderId, String paymentId, String refundId, Number refundAmount) {
+        logger.info("Processing refunded order: {} (payment: {}, refund: {}, amount: {})", 
+                   orderId, paymentId, refundId, refundAmount);
+        
+        Optional<Order> orderOpt = orderRepository.findById(orderId);
+        if (orderOpt.isEmpty()) {
+            logger.error("Order not found for refund processing: {}", orderId);
+            throw new RuntimeException("Order not found: " + orderId);
+        }
+        
+        Order order = orderOpt.get();
+        
+        try {
+            // Update order status based on current status
+            OrderStatus previousStatus = order.getStatus();
+            OrderStatus newStatus;
+            
+            if (refundAmount.doubleValue() >= order.getTotalAmount().doubleValue()) {
+                // Full refund - use RETURNED status as REFUNDED doesn't exist
+                newStatus = OrderStatus.RETURNED;
+                order.setStatus(newStatus);
+            } else {
+                // Partial refund - keep current status but note the refund
+                newStatus = previousStatus;
+            }
+            
+            order.setUpdatedAt(LocalDateTime.now());
+            // Could add refund tracking fields to Order entity if needed
+            
+            orderRepository.save(order);
+            
+            // Create status history
+            String reason = String.format("Refund processed: %s (amount: %s)", refundId, refundAmount);
+            createStatusHistory(order, previousStatus.name(), newStatus.name(), reason, "SYSTEM");
+            
+            // If full refund, might need to restore inventory depending on business rules
+            if (refundAmount.doubleValue() >= order.getTotalAmount().doubleValue()) {
+                // Business decision: restore inventory on full refund?
+                // This depends on whether items are returned or not
+                logger.info("Full refund processed for order: {} - inventory restoration may be needed", orderId);
+            }
+            
+            logger.info("Successfully processed refunded order: {}", orderId);
+            
+        } catch (Exception ex) {
+            logger.error("Failed to process refunded order: {}", orderId, ex);
+            throw ex;
+        }
+    }
+
+    @Transactional
+    public void processCancelledPaymentOrder(UUID orderId, String paymentId, String reason) {
+        logger.info("Processing cancelled payment for order: {} (payment: {}, reason: {})", 
+                   orderId, paymentId, reason);
+        
+        Optional<Order> orderOpt = orderRepository.findById(orderId);
+        if (orderOpt.isEmpty()) {
+            logger.error("Order not found for payment cancellation processing: {}", orderId);
+            throw new RuntimeException("Order not found: " + orderId);
+        }
+        
+        Order order = orderOpt.get();
+        
+        try {
+            // Update order status to CANCELLED
+            OrderStatus previousStatus = order.getStatus();
+            order.setStatus(OrderStatus.CANCELLED);
+            order.setCancelledAt(LocalDateTime.now());
+            order.setCancellationReason("Payment cancelled: " + reason);
+            order.setUpdatedAt(LocalDateTime.now());
+            
+            orderRepository.save(order);
+            
+            // Create status history
+            createStatusHistory(order, previousStatus.name(), OrderStatus.CANCELLED.name(), 
+                              "Payment cancelled: " + reason, "SYSTEM");
+            
+            // Publish order cancelled event
+            eventPublisher.publishOrderCancelled(orderId, reason, "PAYMENT_SYSTEM");
+            
+            // Release inventory reservation
+            try {
+                boolean released = inventoryServiceClient.releaseReservation(orderId);
+                if (!released) {
+                    logger.error("Failed to release inventory reservation for cancelled payment order: {}", orderId);
+                    // Log for manual intervention
+                }
+                
+            } catch (Exception ex) {
+                logger.error("Error releasing inventory reservation for cancelled payment order: {}", orderId, ex);
+                // Continue processing - order status is updated, inventory cleanup can be manual
+            }
+            
+            logger.info("Successfully processed cancelled payment order: {}", orderId);
+            
+        } catch (Exception ex) {
+            logger.error("Failed to process cancelled payment order: {}", orderId, ex);
+            throw ex;
+        }
+    }
+
+    // =====================================================
+    // Helper Methods for Cart Integration
+    // =====================================================
+
+    private String extractSessionFromCartId(String cartId) {
+        if (cartId == null) return null;
+        
+        // Cart ID formats: 
+        // - "cart:auth:userId" for authenticated users
+        // - "cart:anon:sessionId" for anonymous users
+        // - Or just the plain cartId/sessionId
+        
+        if (cartId.startsWith("cart:anon:")) {
+            return cartId.substring("cart:anon:".length());
+        } else if (cartId.startsWith("cart:auth:")) {
+            // For authenticated users, sessionId might not be available
+            // Return null as sessionId is not the primary identifier
+            return null;
+        } else {
+            // Assume it's a plain sessionId or cartId
+            return cartId;
+        }
     }
 }

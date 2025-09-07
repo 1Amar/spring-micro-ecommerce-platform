@@ -1,4 +1,4 @@
-package com.amar.config;
+package com.amar.cart.config;
 
 import org.apache.kafka.clients.admin.AdminClientConfig;
 import org.apache.kafka.clients.admin.NewTopic;
@@ -31,11 +31,11 @@ public class KafkaConfig {
     @Value("${spring.kafka.bootstrap-servers:localhost:9092}")
     private String bootstrapServers;
 
-    @Value("${spring.kafka.consumer.group-id:product-service-group}")
+    @Value("${spring.kafka.consumer.group-id:cart-service-group}")
     private String groupId;
 
-    @Value("${product.kafka.topics.product-events:product-events}")
-    private String productEventsTopic;
+    @Value("${cart.kafka.topics.cart-events:cart-events}")
+    private String cartEventsTopic;
 
     // =====================================================
     // Producer Configuration
@@ -54,13 +54,34 @@ public class KafkaConfig {
         configProps.put(ProducerConfig.BATCH_SIZE_CONFIG, 16384);
         configProps.put(ProducerConfig.LINGER_MS_CONFIG, 1);
         configProps.put(ProducerConfig.BUFFER_MEMORY_CONFIG, 33554432);
+        configProps.put(ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG, true);
         
+        // Timeout settings
+        configProps.put(ProducerConfig.REQUEST_TIMEOUT_MS_CONFIG, 30000);
+        configProps.put(ProducerConfig.DELIVERY_TIMEOUT_MS_CONFIG, 120000);
+        
+        logger.info("Configured Kafka producer with bootstrap servers: {}", bootstrapServers);
         return new DefaultKafkaProducerFactory<>(configProps);
     }
 
     @Bean
     public KafkaTemplate<String, Object> kafkaTemplate() {
-        return new KafkaTemplate<>(producerFactory());
+        KafkaTemplate<String, Object> template = new KafkaTemplate<>(producerFactory());
+        
+        // Enable producer listener for success/failure callbacks
+        template.setProducerListener(new org.springframework.kafka.support.ProducerListener<String, Object>() {
+            public void onSuccess(org.springframework.kafka.support.SendResult<String, Object> result) {
+                logger.debug("Successfully sent message to topic: {} with key: {}", 
+                    result.getRecordMetadata().topic(), result.getProducerRecord().key());
+            }
+
+            public void onError(org.springframework.kafka.support.SendResult<String, Object> result, RuntimeException exception) {
+                logger.error("Failed to send message to topic: {} with key: {}", 
+                    result.getProducerRecord().topic(), result.getProducerRecord().key(), exception);
+            }
+        });
+        
+        return template;
     }
 
     // =====================================================
@@ -88,6 +109,7 @@ public class KafkaConfig {
         props.put(JsonDeserializer.USE_TYPE_INFO_HEADERS, false);
         props.put(JsonDeserializer.VALUE_DEFAULT_TYPE, "java.util.Map");
         
+        logger.info("Configured Kafka consumer with group ID: {}", groupId);
         return new DefaultKafkaConsumerFactory<>(props);
     }
 
@@ -103,6 +125,15 @@ public class KafkaConfig {
         // Concurrency and error handling
         factory.setConcurrency(3); // Number of consumer threads
         factory.setAutoStartup(true);
+        
+        // Error handling
+        factory.setCommonErrorHandler(new org.springframework.kafka.listener.DefaultErrorHandler(
+            (record, exception) -> {
+                logger.error("Error processing record from topic: {} partition: {} offset: {}", 
+                    record.topic(), record.partition(), record.offset(), exception);
+            },
+            new org.springframework.util.backoff.FixedBackOff(1000L, 3L)
+        ));
         
         return factory;
     }
@@ -127,8 +158,8 @@ public class KafkaConfig {
     // =====================================================
 
     @Bean
-    public NewTopic productEventsTopic() {
-        return TopicBuilder.name(productEventsTopic)
+    public NewTopic cartEventsTopic() {
+        return TopicBuilder.name(cartEventsTopic)
             .partitions(3)
             .replicas(1)
             .config("retention.ms", "604800000") // 7 days
@@ -143,8 +174,8 @@ public class KafkaConfig {
 
     @Bean
     public String kafkaConfigInfo() {
-        logger.info("Kafka configuration initialized successfully");
-        logger.info("Product events topic configured: {}", productEventsTopic);
-        return "Product Service Kafka configuration loaded";
+        logger.info("Cart Service Kafka configuration initialized successfully");
+        logger.info("Cart events topic configured: {}", cartEventsTopic);
+        return "Cart Service Kafka configuration loaded";
     }
 }

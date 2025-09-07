@@ -24,6 +24,7 @@ import com.amar.entity.product.Category;
 import com.amar.entity.product.Product;
 import com.amar.exception.DuplicateResourceException;
 import com.amar.exception.ResourceNotFoundException;
+import com.amar.kafka.ProductEventPublisher;
 import com.amar.mapper.ProductMapperMS;
 import com.amar.repository.CategoryRepository;
 import com.amar.repository.ProductRepository;
@@ -45,6 +46,9 @@ public class ProductService {
     
     @Autowired
     private InventoryServiceClient inventoryServiceClient;
+    
+    @Autowired
+    private ProductEventPublisher productEventPublisher;
     
     /**
      * Create a new product
@@ -78,6 +82,21 @@ public class ProductService {
         Product savedProduct = productRepository.save(product);
         logger.info("Product created successfully with ID: {}", savedProduct.getId());
         
+        // Publish product created event
+        try {
+            productEventPublisher.publishProductCreated(
+                savedProduct.getId(),
+                savedProduct.getName(),
+                savedProduct.getSku(),
+                savedProduct.getPrice(),
+                savedProduct.getCategory() != null ? savedProduct.getCategory().getName() : null,
+                savedProduct.getDescription(),
+                savedProduct.getIsActive()
+            );
+        } catch (Exception ex) {
+            logger.error("Failed to publish product created event for product ID: {}", savedProduct.getId(), ex);
+        }
+        
         return productMapperMS.toDto(savedProduct);
     }
     
@@ -103,12 +122,31 @@ public class ProductService {
                 .orElseThrow(() -> new ResourceNotFoundException("Category not found with ID: " + productDto.getCategoryId()));
         }
         
+        // Capture old values for event publishing
+        BigDecimal oldPrice = existingProduct.getPrice();
+        Boolean wasActive = existingProduct.getIsActive();
+        
         // Update fields
         productMapperMS.updateEntityFromDto(productDto, existingProduct);
         existingProduct.setCategory(category);
         
         Product updatedProduct = productRepository.save(existingProduct);
         logger.info("Product updated successfully with ID: {}", updatedProduct.getId());
+        
+        // Publish product updated event
+        try {
+            productEventPublisher.publishProductUpdated(
+                updatedProduct.getId(),
+                updatedProduct.getName(),
+                updatedProduct.getSku(),
+                oldPrice,
+                updatedProduct.getPrice(),
+                wasActive,
+                updatedProduct.getIsActive()
+            );
+        } catch (Exception ex) {
+            logger.error("Failed to publish product updated event for product ID: {}", updatedProduct.getId(), ex);
+        }
         
         return productMapperMS.toDto(updatedProduct);
     }
@@ -378,6 +416,17 @@ public class ProductService {
         product.setIsActive(false);
         productRepository.save(product);
         
+        // Publish product deleted event
+        try {
+            productEventPublisher.publishProductDeleted(
+                product.getId(),
+                product.getName(),
+                product.getSku()
+            );
+        } catch (Exception ex) {
+            logger.error("Failed to publish product deleted event for product ID: {}", product.getId(), ex);
+        }
+        
         logger.info("Product soft deleted successfully with ID: {}", id);
     }
     
@@ -393,6 +442,17 @@ public class ProductService {
         product.setIsActive(true);
         productRepository.save(product);
         
+        // Publish product restored event
+        try {
+            productEventPublisher.publishProductRestored(
+                product.getId(),
+                product.getName(),
+                product.getSku()
+            );
+        } catch (Exception ex) {
+            logger.error("Failed to publish product restored event for product ID: {}", product.getId(), ex);
+        }
+        
         logger.info("Product restored successfully with ID: {}", id);
     }
     
@@ -405,8 +465,21 @@ public class ProductService {
         Product product = productRepository.findById(id)
             .orElseThrow(() -> new ResourceNotFoundException("Product not found with ID: " + id));
         
+        Boolean wasFeatured = product.getIsFeatured();
         product.setIsFeatured(!product.getIsFeatured());
         Product updatedProduct = productRepository.save(product);
+        
+        // Publish featured status changed event
+        try {
+            productEventPublisher.publishFeaturedStatusChanged(
+                updatedProduct.getId(),
+                updatedProduct.getName(),
+                wasFeatured,
+                updatedProduct.getIsFeatured()
+            );
+        } catch (Exception ex) {
+            logger.error("Failed to publish featured status changed event for product ID: {}", updatedProduct.getId(), ex);
+        }
         
         logger.info("Featured status toggled for product ID: {} to: {}", id, updatedProduct.getIsFeatured());
         

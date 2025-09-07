@@ -2,6 +2,7 @@ package com.amar.cart.service;
 
 import com.amar.dto.*;
 import com.amar.cart.client.InventoryServiceClient;
+import com.amar.cart.kafka.CartEventPublisher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,6 +37,9 @@ public class CartService {
     
     @Autowired
     private InventoryServiceClient inventoryServiceClient;
+    
+    @Autowired
+    private CartEventPublisher cartEventPublisher;
     
     // Get Cart
     public CartDto getCart(String userId, String sessionId) {
@@ -97,6 +101,24 @@ public class CartService {
         // Set TTL
         setCartTtl(cartKey, userId != null);
         
+        // Publish item added event
+        try {
+            CartDto updatedCart = getCart(userId, sessionId);
+            cartEventPublisher.publishItemAdded(
+                updatedCart.getCartId(),
+                userId,
+                request.getProductId(),
+                product.getName(),
+                request.getQuantity(),
+                product.getPrice(),
+                product.getPrice().multiply(BigDecimal.valueOf(request.getQuantity())),
+                updatedCart.getItems().size(),
+                updatedCart.getTotalAmount()
+            );
+        } catch (Exception ex) {
+            log.error("Failed to publish item added event for product: {}", request.getProductId(), ex);
+        }
+        
         log.info("Successfully added item to cart with inventory validation - Product: {}, Final Quantity: {}", 
                 request.getProductId(), newQuantity);
         
@@ -127,10 +149,29 @@ public class CartService {
         
         // Get existing item data
         CartItemData existingItem = (CartItemData) redisTemplate.opsForHash().get(cartKey, productKey);
+        Integer oldQuantity = existingItem.getQuantity();
         existingItem.setQuantity(request.getQuantity());
         
         // Update in Redis
         redisTemplate.opsForHash().put(cartKey, productKey, existingItem);
+        
+        // Publish item updated event
+        try {
+            CartDto updatedCart = getCart(userId, sessionId);
+            cartEventPublisher.publishItemUpdated(
+                updatedCart.getCartId(),
+                userId,
+                request.getProductId(),
+                existingItem.getProductName(),
+                oldQuantity,
+                request.getQuantity(),
+                existingItem.getPrice(),
+                updatedCart.getItems().size(),
+                updatedCart.getTotalAmount()
+            );
+        } catch (Exception ex) {
+            log.error("Failed to publish item updated event for product: {}", request.getProductId(), ex);
+        }
         
         log.info("Successfully updated item quantity with inventory validation - Product: {}, New Quantity: {}", 
                 request.getProductId(), request.getQuantity());
@@ -145,9 +186,28 @@ public class CartService {
         String cartKey = getCartKey(userId, sessionId);
         String productKey = "product:" + productId;
         
+        // Get existing item data before removal for event publishing
+        CartItemData existingItem = (CartItemData) redisTemplate.opsForHash().get(cartKey, productKey);
+        
         Long removedCount = redisTemplate.opsForHash().delete(cartKey, productKey);
         
         if (removedCount > 0) {
+            // Publish item removed event
+            try {
+                CartDto updatedCart = getCart(userId, sessionId);
+                cartEventPublisher.publishItemRemoved(
+                    updatedCart.getCartId(),
+                    userId,
+                    productId,
+                    existingItem != null ? existingItem.getProductName() : "",
+                    existingItem != null ? existingItem.getQuantity() : 0,
+                    0, // remaining quantity is 0 since item is completely removed
+                    updatedCart.getItems().size(),
+                    updatedCart.getTotalAmount()
+                );
+            } catch (Exception ex) {
+                log.error("Failed to publish item removed event for product: {}", productId, ex);
+            }
             log.info("Successfully removed item from cart - Product: {}", productId);
         } else {
             log.warn("Attempted to remove non-existent item from cart - Product: {}", productId);
@@ -161,7 +221,31 @@ public class CartService {
         String cartKey = getCartKey(userId, sessionId);
         log.info("Clearing cart - Key: {}", cartKey);
         
+        // Get cart data before clearing for event publishing
+        CartDto existingCart = null;
+        try {
+            existingCart = getCart(userId, sessionId);
+        } catch (Exception ex) {
+            log.debug("Could not get cart data before clearing", ex);
+        }
+        
         Boolean deleted = redisTemplate.delete(cartKey);
+        
+        // Publish cart cleared event
+        if (deleted && existingCart != null) {
+            try {
+                cartEventPublisher.publishCartCleared(
+                    existingCart.getCartId(),
+                    userId,
+                    existingCart.getItems().size(),
+                    existingCart.getTotalAmount(),
+                    "Cart manually cleared"
+                );
+            } catch (Exception ex) {
+                log.error("Failed to publish cart cleared event for cart: {}", existingCart.getCartId(), ex);
+            }
+        }
+        
         log.info("Cart clear result - Key: {}, Deleted: {}", cartKey, deleted);
     }
     
@@ -292,6 +376,14 @@ public class CartService {
         cart.setTotalAmount(BigDecimal.ZERO);
         cart.setCreatedAt(Instant.now());
         cart.setUpdatedAt(Instant.now());
+        
+        // Publish cart created event
+        try {
+            cartEventPublisher.publishCartCreated(cart.getCartId(), userId, sessionId);
+        } catch (Exception ex) {
+            log.error("Failed to publish cart created event for cart: {}", cart.getCartId(), ex);
+        }
+        
         return cart;
     }
     
@@ -348,5 +440,40 @@ public class CartService {
     private void removeReservationId(String cartKey) {
         String reservationKey = cartKey + ":reservation";
         redisTemplate.delete(reservationKey);
+    }
+    
+    // Public method to publish cart conversion event (called by external services like order-service)
+    public void publishCartConversionEvent(String userId, String sessionId, String orderId) {
+        try {
+            CartDto cart = getCart(userId, sessionId);
+            cartEventPublisher.publishCartConvertedToOrder(
+                cart.getCartId(),
+                userId,
+                orderId,
+                cart.getItems().size(),
+                cart.getTotalAmount()
+            );
+            log.info("Published cart conversion event - cart: {} -> order: {}", cart.getCartId(), orderId);
+        } catch (Exception ex) {
+            log.error("Failed to publish cart conversion event for order: {}", orderId, ex);
+        }
+    }
+    
+    // Public method to publish stock validation failure events
+    public void publishStockValidationFailure(String userId, String sessionId, Long productId, 
+                                            String productName, Integer requestedQuantity, Integer availableStock) {
+        try {
+            String cartKey = getCartKey(userId, sessionId);
+            cartEventPublisher.publishStockValidationFailed(
+                cartKey,
+                userId,
+                productId,
+                productName,
+                requestedQuantity,
+                availableStock
+            );
+        } catch (Exception ex) {
+            log.error("Failed to publish stock validation failure event for product: {}", productId, ex);
+        }
     }
 }

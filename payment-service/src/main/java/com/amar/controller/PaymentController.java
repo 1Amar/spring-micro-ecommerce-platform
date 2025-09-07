@@ -1,5 +1,6 @@
 package com.amar.controller;
 
+import com.amar.service.PaymentService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -9,6 +10,7 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 
+import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -21,37 +23,94 @@ public class PaymentController {
 
     @Autowired
     private RestTemplate restTemplate;
+    
+    @Autowired
+    private PaymentService paymentService;
 
     @PostMapping("/process")
     public Map<String, Object> processPayment(@RequestBody Map<String, Object> paymentRequest,
                                             @RequestHeader(value = "X-Correlation-ID", required = false) String correlationId) {
         
         String orderId = (String) paymentRequest.get("orderId");
-        Double amount = (Double) paymentRequest.get("amount");
+        Object amountObj = paymentRequest.get("amount");
+        String userId = (String) paymentRequest.get("userId");
+        String paymentMethod = (String) paymentRequest.getOrDefault("paymentMethod", "CREDIT_CARD");
         
-        logger.info("Processing payment for order: {} amount: {} - Correlation-ID: {}", 
-                   orderId, amount, correlationId);
-        
-        // Simulate payment processing
-        try {
-            Thread.sleep(100); // Simulate processing time
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
+        BigDecimal amount = BigDecimal.ZERO;
+        if (amountObj instanceof Number) {
+            amount = BigDecimal.valueOf(((Number) amountObj).doubleValue());
+        } else if (amountObj instanceof String) {
+            try {
+                amount = new BigDecimal((String) amountObj);
+            } catch (NumberFormatException e) {
+                logger.error("Invalid amount format: {}", amountObj);
+            }
         }
         
-        String paymentId = UUID.randomUUID().toString();
+        logger.info("Processing payment for order: {} amount: {} user: {} method: {} - Correlation-ID: {}", 
+                   orderId, amount, userId, paymentMethod, correlationId);
+        
+        // Use PaymentService with event publishing
+        PaymentService.PaymentResult result = paymentService.processPayment(orderId, amount, userId, paymentMethod);
         
         Map<String, Object> response = new HashMap<>();
         response.put("service", "payment-service");
-        response.put("paymentId", paymentId);
+        response.put("paymentId", result.getPaymentId());
         response.put("orderId", orderId);
         response.put("amount", amount);
-        response.put("status", "COMPLETED");
+        response.put("status", result.getStatus());
+        response.put("success", result.isSuccess());
+        response.put("message", result.getMessage());
+        response.put("transactionId", result.getTransactionId());
         response.put("correlationId", correlationId);
         response.put("timestamp", System.currentTimeMillis());
         
-        logger.info("Payment processed successfully: {} for order: {} - Correlation-ID: {}", 
-                   paymentId, orderId, correlationId);
+        logger.info("Payment processed: {} for order: {} - Status: {} - Correlation-ID: {}", 
+                   result.getPaymentId(), orderId, result.getStatus(), correlationId);
+        
+        return response;
+    }
+
+    @PostMapping("/process/paypal")
+    public Map<String, Object> processPayPalPayment(@RequestBody Map<String, Object> paymentRequest,
+                                                   @RequestHeader(value = "X-Correlation-ID", required = false) String correlationId) {
+        
+        String orderId = (String) paymentRequest.get("orderId");
+        Object amountObj = paymentRequest.get("amount");
+        String userId = (String) paymentRequest.get("userId");
+        
+        BigDecimal amount = BigDecimal.ZERO;
+        if (amountObj instanceof Number) {
+            amount = BigDecimal.valueOf(((Number) amountObj).doubleValue());
+        } else if (amountObj instanceof String) {
+            try {
+                amount = new BigDecimal((String) amountObj);
+            } catch (NumberFormatException e) {
+                logger.error("Invalid amount format: {}", amountObj);
+            }
+        }
+        
+        logger.info("Processing PayPal payment for order: {} amount: {} user: {} - Correlation-ID: {}", 
+                   orderId, amount, userId, correlationId);
+        
+        // Use PaymentService for PayPal processing with event publishing
+        PaymentService.PaymentResult result = paymentService.processPayPalPayment(orderId, amount, userId);
+        
+        Map<String, Object> response = new HashMap<>();
+        response.put("service", "payment-service");
+        response.put("gateway", "PAYPAL");
+        response.put("paymentId", result.getPaymentId());
+        response.put("orderId", orderId);
+        response.put("amount", amount);
+        response.put("status", result.getStatus());
+        response.put("success", result.isSuccess());
+        response.put("message", result.getMessage());
+        response.put("transactionId", result.getTransactionId());
+        response.put("correlationId", correlationId);
+        response.put("timestamp", System.currentTimeMillis());
+        
+        logger.info("PayPal payment processed: {} for order: {} - Status: {} - Correlation-ID: {}", 
+                   result.getPaymentId(), orderId, result.getStatus(), correlationId);
         
         return response;
     }
@@ -62,12 +121,29 @@ public class PaymentController {
         
         logger.info("Getting payment status for: {} - Correlation-ID: {}", paymentId, correlationId);
         
+        PaymentService.PaymentInfo payment = paymentService.getPaymentById(paymentId);
+        
         Map<String, Object> response = new HashMap<>();
         response.put("service", "payment-service");
         response.put("paymentId", paymentId);
-        response.put("status", "COMPLETED");
         response.put("correlationId", correlationId);
         response.put("timestamp", System.currentTimeMillis());
+        
+        if (payment != null) {
+            response.put("status", payment.getStatus());
+            response.put("orderId", payment.getOrderId());
+            response.put("amount", payment.getAmount());
+            response.put("paymentMethod", payment.getPaymentMethod());
+            response.put("transactionId", payment.getTransactionId());
+            response.put("createdAt", payment.getCreatedAt());
+            response.put("completedAt", payment.getCompletedAt());
+            if (payment.getFailureReason() != null) {
+                response.put("failureReason", payment.getFailureReason());
+            }
+        } else {
+            response.put("status", "NOT_FOUND");
+            response.put("error", "Payment not found");
+        }
         
         return response;
     }
