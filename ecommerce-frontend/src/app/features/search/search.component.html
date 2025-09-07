@@ -240,17 +240,27 @@
                   </p>
                   <div class="product-meta mb-2">
                     <span class="badge bg-secondary me-1" *ngIf="product.brand">{{ product.brand }}</span>
-                    <span class="badge bg-info" *ngIf="product.categoryName">{{ product.categoryName }}</span>
+                    <span class="badge bg-info me-1" *ngIf="product.categoryName">{{ product.categoryName }}</span>
+                    <!-- Stock Status Badge -->
+                    <span [class]="getStockStatusClass(product)" *ngIf="product.stockStatus">
+                      {{ getStockStatusText(product) }}
+                    </span>
                   </div>
                   <div class="mt-auto">
                     <div class="d-flex justify-content-between align-items-center">
                       <div class="price">
                         <span class="fw-bold text-success">{{ getFormattedPrice(product.price) }}</span>
+                        <!-- Show available quantity for low stock -->
+                        <div *ngIf="product.isLowStock && product.availableQuantity" class="small text-muted">
+                          {{ product.availableQuantity }} remaining
+                        </div>
                       </div>
-                      <button class="btn btn-primary btn-sm" 
+                      <button class="btn btn-sm" 
+                              [class]="canAddToCart(product) ? 'btn-primary' : 'btn-secondary'"
                               (click)="onAddToCart(product)"
-                              [disabled]="isLoading">
+                              [disabled]="!canAddToCart(product) || isLoading">
                         <mat-icon>add_shopping_cart</mat-icon>
+                        <span class="d-none d-md-inline ms-1">{{ getAddToCartButtonText(product) }}</span>
                       </button>
                     </div>
                   </div>
@@ -281,12 +291,20 @@
                         <div class="product-meta">
                           <span class="badge bg-secondary me-2" *ngIf="product.brand">{{ product.brand }}</span>
                           <span class="badge bg-info me-2" *ngIf="product.categoryName">{{ product.categoryName }}</span>
+                          <!-- Stock Status Badge -->
+                          <span [class]="getStockStatusClass(product) + ' me-2'" *ngIf="product.stockStatus">
+                            {{ getStockStatusText(product) }}
+                          </span>
                           <small class="text-muted" *ngIf="product.sku">SKU: {{ product.sku }}</small>
                         </div>
                       </div>
                       <div class="col-lg-4 text-lg-end">
                         <div class="price mb-2">
                           <span class="h5 fw-bold text-success">{{ getFormattedPrice(product.price) }}</span>
+                          <!-- Show available quantity for low stock -->
+                          <div *ngIf="product.isLowStock && product.availableQuantity" class="small text-muted">
+                            {{ product.availableQuantity }} remaining
+                          </div>
                         </div>
                         <div class="product-actions">
                           <button class="btn btn-outline-primary btn-sm me-2" 
@@ -294,11 +312,12 @@
                             <mat-icon>visibility</mat-icon>
                             View
                           </button>
-                          <button class="btn btn-primary btn-sm" 
+                          <button class="btn btn-sm" 
+                                  [class]="canAddToCart(product) ? 'btn-primary' : 'btn-secondary'"
                                   (click)="onAddToCart(product)"
-                                  [disabled]="isLoading">
+                                  [disabled]="!canAddToCart(product) || isLoading">
                             <mat-icon>add_shopping_cart</mat-icon>
-                            Add to Cart
+                            {{ getAddToCartButtonText(product) }}
                           </button>
                         </div>
                       </div>

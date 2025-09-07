@@ -11,6 +11,13 @@ export interface ProductSearchDto {
   sku?: string;
   createdAt?: string;
   updatedAt?: string;
+  // Stock information
+  availableQuantity?: number;
+  reservedQuantity?: number;
+  inStock?: boolean;
+  isLowStock?: boolean;
+  reorderLevel?: number;
+  stockStatus?: 'IN_STOCK' | 'LOW_STOCK' | 'OUT_OF_STOCK';
 }
 
 export interface SearchResponseDto {

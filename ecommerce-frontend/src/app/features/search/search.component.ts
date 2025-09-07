@@ -10,6 +10,7 @@ import { SearchService } from '@core/services/search.service';
 import { CartService } from '@core/services/cart.service';
 import { AuthService } from '@core/services/auth.service';
 import { LoadingService } from '@core/services/loading.service';
+import { InventoryService, InventoryDto } from '@core/services/inventory.service';
 
 import { 
   ProductSearchDto, 
@@ -76,6 +77,7 @@ export class SearchComponent implements OnInit, OnDestroy {
     private cartService: CartService,
     private authService: AuthService,
     private loadingService: LoadingService,
+    private inventoryService: InventoryService,
     private route: ActivatedRoute,
     private router: Router,
     private formBuilder: FormBuilder
@@ -223,6 +225,9 @@ export class SearchComponent implements OnInit, OnDestroy {
     this.totalElements = response.totalElements;
     this.totalPages = response.totalPages;
     
+    // Load inventory data for the products
+    this.loadInventoryForProducts();
+    
     // Extract unique categories and brands for filtering
     this.extractFilterOptions();
     
@@ -231,6 +236,47 @@ export class SearchComponent implements OnInit, OnDestroy {
       this.hasError = true;
       this.errorMessage = response.errorMessage;
     }
+  }
+
+  private loadInventoryForProducts(): void {
+    if (this.products.length === 0) return;
+
+    const productIds = this.products.map(p => p.productId);
+    
+    this.inventoryService.getInventoryForProducts(productIds)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (inventories) => {
+          this.enrichProductsWithInventory(inventories);
+        },
+        error: (error) => {
+          console.error('Failed to load inventory data:', error);
+          // Continue without inventory data - just log the error
+        }
+      });
+  }
+
+  private enrichProductsWithInventory(inventories: InventoryDto[]): void {
+    const inventoryMap = new Map<number, InventoryDto>();
+    inventories.forEach(inv => inventoryMap.set(inv.productId, inv));
+
+    this.products.forEach(product => {
+      const inventory = inventoryMap.get(product.productId);
+      if (inventory) {
+        const stockStatus = this.inventoryService.getStockStatus(inventory);
+        product.availableQuantity = inventory.availableQuantity;
+        product.reservedQuantity = inventory.reservedQuantity;
+        product.inStock = stockStatus.inStock;
+        product.isLowStock = stockStatus.isLowStock;
+        product.reorderLevel = inventory.reorderLevel;
+        product.stockStatus = stockStatus.stockStatus;
+      } else {
+        // Default values when no inventory data available
+        product.inStock = false;
+        product.stockStatus = 'OUT_OF_STOCK';
+        product.availableQuantity = 0;
+      }
+    });
   }
 
   private extractFilterOptions(): void {
@@ -313,7 +359,10 @@ export class SearchComponent implements OnInit, OnDestroy {
   }
 
   onAddToCart(product: ProductSearchDto): void {
-    if (!product) return;
+    if (!product || !product.inStock) {
+      console.log('Product is out of stock');
+      return;
+    }
 
     const addToCartRequest: AddToCartRequest = {
       productId: product.productId,
@@ -376,5 +425,26 @@ export class SearchComponent implements OnInit, OnDestroy {
 
   setDefaultImage(event: any): void {
     (event.target as HTMLImageElement).src = '/assets/images/no-image.png';
+  }
+
+  // Stock status utility methods for template
+  getStockStatusText(product: ProductSearchDto): string {
+    if (!product.stockStatus) return 'Unknown';
+    return this.inventoryService.getStockStatusText(product.stockStatus, product.availableQuantity);
+  }
+
+  getStockStatusClass(product: ProductSearchDto): string {
+    if (!product.stockStatus) return 'badge bg-secondary';
+    return this.inventoryService.getStockStatusClass(product.stockStatus);
+  }
+
+  canAddToCart(product: ProductSearchDto): boolean {
+    return product.inStock === true && (product.availableQuantity || 0) > 0;
+  }
+
+  getAddToCartButtonText(product: ProductSearchDto): string {
+    if (!product.inStock) return 'Out of Stock';
+    if (product.isLowStock) return 'Add to Cart (Limited)';
+    return 'Add to Cart';
   }
 }
