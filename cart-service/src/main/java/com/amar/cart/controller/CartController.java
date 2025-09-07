@@ -244,6 +244,48 @@ public class CartController {
         ));
     }
     
+    // =====================================================
+    // Cart Conversion Events
+    // =====================================================
+    
+    @PostMapping("/conversion-event")
+    public ResponseEntity<Map<String, Object>> publishConversionEvent(@RequestBody Map<String, Object> request) {
+        try {
+            String userId = (String) request.get("userId");
+            String sessionId = (String) request.get("sessionId");
+            String orderId = (String) request.get("orderId");
+            
+            log.info("Received cart conversion event request - userId: {}, sessionId: {}, orderId: {}", 
+                    userId, sessionId, orderId);
+            
+            // Validate required parameters
+            if (orderId == null || orderId.trim().isEmpty()) {
+                return ResponseEntity.badRequest().body(Map.of(
+                    "error", "orderId is required",
+                    "timestamp", Instant.now().toString()
+                ));
+            }
+            
+            // Call the cart service to publish the event
+            cartService.publishCartConversionEvent(userId, sessionId, orderId);
+            
+            return ResponseEntity.ok(Map.of(
+                "status", "success",
+                "message", "Cart conversion event published successfully",
+                "orderId", orderId,
+                "timestamp", Instant.now().toString()
+            ));
+            
+        } catch (Exception ex) {
+            log.error("Failed to publish cart conversion event", ex);
+            return ResponseEntity.internalServerError().body(Map.of(
+                "error", "Failed to publish cart conversion event",
+                "message", ex.getMessage(),
+                "timestamp", Instant.now().toString()
+            ));
+        }
+    }
+    
     // Helper Methods
     private String generateSessionId() {
         return UUID.randomUUID().toString();

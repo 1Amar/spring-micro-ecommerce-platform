@@ -310,4 +310,213 @@ public class InventoryEventListener {
             throw new IllegalArgumentException("Invalid orderId format: " + orderIdObj);
         }
     }
+
+    // =====================================================
+    // Cart Events (for real-time stock validation)
+    // =====================================================
+
+    @KafkaListener(topics = "cart-events", groupId = "${spring.kafka.consumer.group-id}")
+    public void handleCartEvents(@Payload Map<String, Object> event,
+                                @Header(KafkaHeaders.RECEIVED_TOPIC) String topic,
+                                @Header(KafkaHeaders.RECEIVED_PARTITION) int partition,
+                                @Header(KafkaHeaders.RECEIVED_KEY) String key,
+                                Acknowledgment acknowledgment) {
+        
+        logger.info("Received cart event from topic: {} partition: {} key: {}", topic, partition, key);
+        
+        try {
+            String eventType = (String) event.get("eventType");
+            
+            switch (eventType) {
+                case "cart.item.added":
+                    handleCartItemAdded(event);
+                    break;
+                case "cart.item.updated":
+                    handleCartItemUpdated(event);
+                    break;
+                case "cart.stock.validation.failed":
+                    handleCartStockValidationFailed(event);
+                    break;
+                case "cart.converted.to.order":
+                    handleCartConvertedToOrder(event);
+                    break;
+                default:
+                    logger.debug("Unhandled cart event type: {}", eventType);
+            }
+            
+            acknowledgment.acknowledge();
+            logger.debug("Successfully processed cart event: {}", eventType);
+            
+        } catch (Exception ex) {
+            logger.error("Failed to process cart event from topic: {}", topic, ex);
+            // Don't acknowledge on failure - message will be retried
+        }
+    }
+
+    private void handleCartItemAdded(Map<String, Object> event) {
+        logger.debug("Processing cart item added event");
+        
+        try {
+            String cartId = (String) event.get("cartId");
+            String userId = (String) event.get("userId");
+            
+            @SuppressWarnings("unchecked")
+            Map<String, Object> cartData = (Map<String, Object>) event.get("cartData");
+            
+            if (cartData != null) {
+                Long productId = extractProductId(cartData.get("productId"));
+                Integer quantity = (Integer) cartData.get("quantity");
+                
+                // Validate current stock availability (proactive validation)
+                try {
+                    var availabilityResponse = inventoryService.checkAvailability(productId, quantity);
+                    if (availabilityResponse != null && !Boolean.TRUE.equals(availabilityResponse.getAvailable())) {
+                        logger.warn("Stock validation failed for cart {} - product {} quantity {} may have insufficient stock", 
+                                   cartId, productId, quantity);
+                        
+                        // Could publish a stock validation alert event here if needed
+                        // This is for monitoring and analytics purposes
+                    } else {
+                        logger.debug("Stock validation passed for cart {} - product {} quantity {}", 
+                                    cartId, productId, quantity);
+                    }
+                } catch (Exception ex) {
+                    logger.error("Error validating stock for cart item added event - cart: {} product: {}", 
+                               cartId, productId, ex);
+                }
+            }
+            
+        } catch (Exception ex) {
+            logger.error("Failed to process cart item added event", ex);
+            throw ex; // Re-throw to prevent acknowledgment
+        }
+    }
+
+    private void handleCartItemUpdated(Map<String, Object> event) {
+        logger.debug("Processing cart item updated event");
+        
+        try {
+            String cartId = (String) event.get("cartId");
+            String userId = (String) event.get("userId");
+            
+            @SuppressWarnings("unchecked")
+            Map<String, Object> cartData = (Map<String, Object>) event.get("cartData");
+            
+            if (cartData != null) {
+                Long productId = extractProductId(cartData.get("productId"));
+                Integer newQuantity = (Integer) cartData.get("newQuantity");
+                Integer oldQuantity = (Integer) cartData.get("oldQuantity");
+                
+                // Validate new stock availability
+                try {
+                    if (newQuantity > oldQuantity) {
+                        // Quantity increased - validate additional stock
+                        Integer additionalQuantity = newQuantity - oldQuantity;
+                        var availabilityResponse = inventoryService.checkAvailability(productId, newQuantity);
+                        
+                        if (availabilityResponse != null && !Boolean.TRUE.equals(availabilityResponse.getAvailable())) {
+                            logger.warn("Stock validation failed for cart {} - product {} updated quantity {} exceeds available stock", 
+                                       cartId, productId, newQuantity);
+                            
+                            // Could trigger a stock shortage alert
+                        } else {
+                            logger.debug("Stock validation passed for cart {} - product {} updated to quantity {}", 
+                                        cartId, productId, newQuantity);
+                        }
+                    }
+                } catch (Exception ex) {
+                    logger.error("Error validating stock for cart item updated event - cart: {} product: {}", 
+                               cartId, productId, ex);
+                }
+            }
+            
+        } catch (Exception ex) {
+            logger.error("Failed to process cart item updated event", ex);
+            throw ex; // Re-throw to prevent acknowledgment
+        }
+    }
+
+    private void handleCartStockValidationFailed(Map<String, Object> event) {
+        logger.warn("Processing cart stock validation failed event");
+        
+        try {
+            String cartId = (String) event.get("cartId");
+            String userId = (String) event.get("userId");
+            
+            @SuppressWarnings("unchecked")
+            Map<String, Object> cartData = (Map<String, Object>) event.get("cartData");
+            
+            if (cartData != null) {
+                Long productId = extractProductId(cartData.get("productId"));
+                Integer requestedQuantity = (Integer) cartData.get("requestedQuantity");
+                Integer availableStock = (Integer) cartData.get("availableStock");
+                String productName = (String) cartData.get("productName");
+                
+                logger.error("Stock validation failed - cart: {}, product: {} ({}), requested: {}, available: {}", 
+                           cartId, productId, productName, requestedQuantity, availableStock);
+                
+                // This event indicates a stock shortage situation
+                // Inventory service can use this for:
+                // 1. Triggering low stock alerts
+                // 2. Adjusting stock availability calculations
+                // 3. Analytics on high-demand products
+                
+                // Check if we need to trigger a low stock alert
+                try {
+                    if (availableStock != null && availableStock < 10) { // configurable threshold
+                        logger.info("Low stock detected for product {} due to cart validation failure - available: {}", 
+                                   productId, availableStock);
+                        
+                        // Log for analytics - actual alert publishing would be handled by scheduled jobs
+                        // or other inventory management processes
+                    }
+                } catch (Exception ex) {
+                    logger.error("Error processing low stock detection for product: {}", productId, ex);
+                }
+            }
+            
+        } catch (Exception ex) {
+            logger.error("Failed to process cart stock validation failed event", ex);
+            throw ex; // Re-throw to prevent acknowledgment
+        }
+    }
+
+    private void handleCartConvertedToOrder(Map<String, Object> event) {
+        logger.info("Processing cart converted to order event");
+        
+        try {
+            String cartId = (String) event.get("cartId");
+            String userId = (String) event.get("userId");
+            
+            @SuppressWarnings("unchecked")
+            Map<String, Object> cartData = (Map<String, Object>) event.get("cartData");
+            
+            if (cartData != null && cartData.containsKey("orderId")) {
+                String orderIdStr = (String) cartData.get("orderId");
+                UUID orderId = UUID.fromString(orderIdStr);
+                Integer itemCount = (Integer) cartData.get("itemCount");
+                
+                logger.info("Cart {} with {} items converted to order {} - inventory reservation should be handled by order service", 
+                           cartId, itemCount, orderId);
+                
+                // The actual inventory reservation is handled by the order service
+                // This event is mainly for analytics and tracking purposes
+                // Inventory service can track conversion patterns, popular products, etc.
+            }
+            
+        } catch (Exception ex) {
+            logger.error("Failed to process cart converted to order event", ex);
+            throw ex; // Re-throw to prevent acknowledgment
+        }
+    }
+
+    private Long extractProductId(Object productIdObj) {
+        if (productIdObj instanceof Number) {
+            return ((Number) productIdObj).longValue();
+        } else if (productIdObj instanceof String) {
+            return Long.parseLong((String) productIdObj);
+        } else {
+            throw new IllegalArgumentException("Invalid productId format: " + productIdObj);
+        }
+    }
 }

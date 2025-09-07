@@ -291,6 +291,48 @@ public class CartServiceClient {
     }
 
     // =====================================================
+    // Cart Conversion Events
+    // =====================================================
+
+    public boolean publishCartConversionEvent(String userId, String sessionId, String orderId) {
+        logger.debug("Publishing cart conversion event - userId: {}, sessionId: {}, orderId: {}", userId, sessionId, orderId);
+        
+        return circuitBreaker.run(() -> {
+            try {
+                // Create request body
+                Map<String, Object> requestBody = Map.of(
+                    "userId", userId != null ? userId : "",
+                    "sessionId", sessionId != null ? sessionId : "",
+                    "orderId", orderId
+                );
+                
+                // Call cart service to publish conversion event
+                webClient.post()
+                    .uri(cartServiceUrl + "/api/v1/cart/conversion-event")
+                    .bodyValue(requestBody)
+                    .retrieve()
+                    .bodyToMono(Void.class)
+                    .timeout(Duration.ofSeconds(5))
+                    .block();
+                
+                logger.info("Successfully published cart conversion event for order: {}", orderId);
+                return true;
+                
+            } catch (WebClientResponseException ex) {
+                logger.error("Failed to publish cart conversion event - HTTP {}: {}", 
+                           ex.getStatusCode(), ex.getResponseBodyAsString());
+                return false;
+            } catch (Exception ex) {
+                logger.error("Error publishing cart conversion event for order: {}", orderId, ex);
+                return false;
+            }
+        }, throwable -> {
+            logger.error("Circuit breaker triggered for cart conversion event publishing", throwable);
+            return false;
+        });
+    }
+
+    // =====================================================
     // Data Classes
     // =====================================================
 
