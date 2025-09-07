@@ -38,15 +38,24 @@ public class OrderManagementController {
 
     @PostMapping
     public ResponseEntity<OrderDto> createOrder(@Valid @RequestBody CreateOrderRequest request) {
-        logger.info("Creating order for user: {}", request.getUserId());
+        logger.info("🛒 [ORDER-CREATE] Received order request for user: {}", request.getUserId());
+        logger.info("🛒 [ORDER-CREATE] Request payload: userId={}, cartId={}, itemsCount={}, paymentMethod={}", 
+                   request.getUserId(), request.getCartId(), 
+                   request.getItems() != null ? request.getItems().size() : 0, 
+                   request.getPaymentMethod());
+        logger.info("🛒 [ORDER-CREATE] Customer email: {}, billing: {} {}", 
+                   request.getCustomerEmail(), request.getBillingFirstName(), request.getBillingLastName());
 
         try {
             OrderDto order = orderService.createOrder(request);
-            logger.info("Order created successfully: {}", order.getOrderNumber());
+            logger.info("✅ [ORDER-CREATE] Order created successfully: {} (ID: {})", 
+                       order.getOrderNumber(), order.getId());
             return ResponseEntity.status(HttpStatus.CREATED).body(order);
 
         } catch (Exception e) {
-            logger.error("Failed to create order for user: {}", request.getUserId(), e);
+            logger.error("❌ [ORDER-CREATE] Failed to create order for user: {} - Error: {}", 
+                        request.getUserId(), e.getMessage());
+            logger.error("❌ [ORDER-CREATE] Full error stack: ", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }

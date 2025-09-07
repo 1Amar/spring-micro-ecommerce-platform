@@ -44,6 +44,11 @@ spring:
           predicates:
             - Path=/api/v1/orders/**
             
+        - id: order-management-service
+          uri: lb://ecom-order-service
+          predicates:
+            - Path=/api/v1/order-management/**
+            
         - id: payment-service
           uri: lb://payment-service
           predicates:

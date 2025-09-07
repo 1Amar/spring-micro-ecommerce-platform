@@ -11,6 +11,7 @@ import { LoadingService } from '@core/services/loading.service';
 
 import { Cart, CartItem } from '@shared/models/cart.model';
 import { CreateOrderRequest, CreateOrderItemRequest, Order } from '@shared/models/order.model';
+import { environment } from '@environments/environment';
 
 @Component({
   selector: 'app-checkout',
@@ -262,7 +263,15 @@ export class CheckoutComponent implements OnInit, OnDestroy {
   }
 
   placeOrder(): void {
+    console.log('🛒 Place Order clicked');
+    console.log('Form valid:', this.checkoutForm.valid);
+    console.log('Cart exists:', !!this.cart);
+    console.log('Is processing:', this.isProcessing);
+    console.log('Form errors:', this.checkoutForm.errors);
+    console.log('Current step:', this.currentStep);
+    
     if (!this.checkoutForm.valid || !this.cart || this.isProcessing) {
+      console.log('❌ Order placement blocked - validation failed');
       return;
     }
 
@@ -273,9 +282,9 @@ export class CheckoutComponent implements OnInit, OnDestroy {
     
     // Prepare order items
     const orderItems: CreateOrderItemRequest[] = this.cart.items.map(item => ({
-      productId: item.productId,
+      productId: Number(item.productId), // Ensure it's a proper number for Java Long
       quantity: item.quantity,
-      unitPrice: item.unitPrice,
+      unitPrice: Number(item.unitPrice), // Ensure it's a proper number for Java BigDecimal
       productName: item.productName,
       productSku: item.productId.toString(), // Fallback since productSku doesn't exist
       productImageUrl: item.imageUrl
@@ -314,9 +323,12 @@ export class CheckoutComponent implements OnInit, OnDestroy {
       sameAsBilling: formValue.sameAsBilling,
       notes: formValue.notes,
       couponCode: formValue.couponCode,
-      expectedTotal: this.orderSummary.total
+      expectedTotal: Number(this.orderSummary.total)
     };
 
+    console.log('🚀 Sending order request:', createOrderRequest);
+    console.log('📡 API URL:', `${environment.apiUrl}${environment.services.orderService}`);
+    
     this.orderService.createOrder(createOrderRequest)
       .pipe(
         takeUntil(this.destroy$),
@@ -327,9 +339,20 @@ export class CheckoutComponent implements OnInit, OnDestroy {
       )
       .subscribe({
         next: (order: Order) => {
+          console.log('✅ Order created successfully:', order);
           this.snackBar.open('Order placed successfully!', 'Close', { 
             duration: 5000,
             panelClass: ['success-snackbar']
+          });
+          
+          // Clear cart after successful order - refresh cart state immediately
+          this.cartService.getCart().subscribe({
+            next: (cart) => {
+              console.log('Cart refreshed after order:', cart);
+            },
+            error: (error) => {
+              console.error('Failed to refresh cart after order:', error);
+            }
           });
           
           // Navigate to order confirmation page
@@ -341,7 +364,9 @@ export class CheckoutComponent implements OnInit, OnDestroy {
           });
         },
         error: (error) => {
-          console.error('Order creation failed:', error);
+          console.error('❌ Order creation failed:', error);
+          console.error('Error status:', error.status);
+          console.error('Error message:', error.error);
           this.snackBar.open(
             error.error?.message || 'Failed to place order. Please try again.',
             'Close',
