@@ -75,12 +75,35 @@ public class ProductService {
         if (product.getIsActive() == null) product.setIsActive(true);
         if (product.getIsFeatured() == null) product.setIsFeatured(false);
         if (product.getTrackInventory() == null) product.setTrackInventory(true);
-        if (product.getStockQuantity() == null) product.setStockQuantity(0);
-        if (product.getLowStockThreshold() == null) product.setLowStockThreshold(0);
         if (product.getSortOrder() == null) product.setSortOrder(0);
+        
+        // Store stock data for inventory service creation
+        Integer stockQuantity = productDto.getStockQuantity() != null ? productDto.getStockQuantity() : 0;
+        Integer lowStockThreshold = productDto.getLowStockThreshold() != null ? productDto.getLowStockThreshold() : 0;
+        
+        // Don't store stock data in products table - let inventory service handle it
+        product.setStockQuantity(null);
+        product.setLowStockThreshold(null);
         
         Product savedProduct = productRepository.save(product);
         logger.info("Product created successfully with ID: {}", savedProduct.getId());
+        
+        // Create inventory record in inventory service
+        try {
+            boolean inventoryCreated = inventoryServiceClient.createInventory(
+                savedProduct.getId(), 
+                stockQuantity, 
+                lowStockThreshold
+            );
+            if (inventoryCreated) {
+                logger.info("Inventory record created successfully for product ID: {}", savedProduct.getId());
+            } else {
+                logger.warn("Failed to create inventory record for product ID: {}", savedProduct.getId());
+            }
+        } catch (Exception ex) {
+            logger.error("Error creating inventory record for product ID: {}", savedProduct.getId(), ex);
+            // Consider if this should be a transaction rollback scenario
+        }
         
         // Publish product created event
         try {
@@ -126,12 +149,37 @@ public class ProductService {
         BigDecimal oldPrice = existingProduct.getPrice();
         Boolean wasActive = existingProduct.getIsActive();
         
+        // Store stock data for inventory service update
+        Integer stockQuantity = productDto.getStockQuantity();
+        Integer lowStockThreshold = productDto.getLowStockThreshold();
+        
         // Update fields
         productMapperMS.updateEntityFromDto(productDto, existingProduct);
         existingProduct.setCategory(category);
         
+        // Don't store stock data in products table - let inventory service handle it
+        existingProduct.setStockQuantity(null);
+        existingProduct.setLowStockThreshold(null);
+        
         Product updatedProduct = productRepository.save(existingProduct);
         logger.info("Product updated successfully with ID: {}", updatedProduct.getId());
+        
+        // Update inventory record in inventory service if stock data was provided
+        if (stockQuantity != null) {
+            try {
+                boolean inventoryUpdated = inventoryServiceClient.updateInventory(
+                    updatedProduct.getId(), 
+                    stockQuantity
+                );
+                if (inventoryUpdated) {
+                    logger.info("Inventory record updated successfully for product ID: {}", updatedProduct.getId());
+                } else {
+                    logger.warn("Failed to update inventory record for product ID: {}", updatedProduct.getId());
+                }
+            } catch (Exception ex) {
+                logger.error("Error updating inventory record for product ID: {}", updatedProduct.getId(), ex);
+            }
+        }
         
         // Publish product updated event
         try {
@@ -315,7 +363,7 @@ public class ProductService {
     }
     
     /**
-     * Update stock quantity
+     * Update stock quantity via inventory service
      */
     public void updateStockQuantity(Long productId, Integer newQuantity) {
         logger.info("Updating stock quantity for product ID: {} to: {}", productId, newQuantity);
@@ -328,14 +376,20 @@ public class ProductService {
             return;
         }
         
-        product.setStockQuantity(newQuantity);
-        productRepository.save(product);
-        
-        logger.info("Stock quantity updated successfully for product ID: {}", productId);
+        try {
+            boolean inventoryUpdated = inventoryServiceClient.updateInventory(productId, newQuantity);
+            if (inventoryUpdated) {
+                logger.info("Stock quantity updated successfully for product ID: {}", productId);
+            } else {
+                logger.warn("Failed to update stock quantity for product ID: {}", productId);
+            }
+        } catch (Exception ex) {
+            logger.error("Error updating stock quantity for product ID: {}", productId, ex);
+        }
     }
     
     /**
-     * Adjust stock quantity (add or subtract)
+     * Adjust stock quantity (add or subtract) via inventory service
      */
     public void adjustStockQuantity(Long productId, Integer adjustment) {
         logger.info("Adjusting stock quantity for product ID: {} by: {}", productId, adjustment);
@@ -348,11 +402,26 @@ public class ProductService {
             return;
         }
         
-        int newQuantity = Math.max(0, product.getStockQuantity() + adjustment);
-        product.setStockQuantity(newQuantity);
-        productRepository.save(product);
-        
-        logger.info("Stock quantity adjusted successfully for product ID: {} to: {}", productId, newQuantity);
+        try {
+            // Get current inventory from inventory service
+            Optional<InventoryDto> inventory = inventoryServiceClient.getInventoryByProductId(productId);
+            if (inventory.isPresent()) {
+                int currentQuantity = inventory.get().getQuantity();
+                int newQuantity = Math.max(0, currentQuantity + adjustment);
+                
+                boolean inventoryUpdated = inventoryServiceClient.updateInventory(productId, newQuantity);
+                if (inventoryUpdated) {
+                    logger.info("Stock quantity adjusted successfully for product ID: {} from {} to: {}", 
+                              productId, currentQuantity, newQuantity);
+                } else {
+                    logger.warn("Failed to adjust stock quantity for product ID: {}", productId);
+                }
+            } else {
+                logger.warn("No inventory record found for product ID: {}", productId);
+            }
+        } catch (Exception ex) {
+            logger.error("Error adjusting stock quantity for product ID: {}", productId, ex);
+        }
     }
     
     /**

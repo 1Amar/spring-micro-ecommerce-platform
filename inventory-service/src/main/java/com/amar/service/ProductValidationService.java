@@ -50,7 +50,7 @@ public class ProductValidationService {
 
         try {
             Boolean exists = webClient.get()
-                .uri(productServiceBaseUrl + "/api/v1/products/{productId}/exists", productId)
+                .uri(productServiceBaseUrl + "/api/v1/products/catalog/{productId}/exists", productId)
                 .retrieve()
                 .bodyToMono(Boolean.class)
                 .timeout(Duration.ofSeconds(timeoutSeconds))

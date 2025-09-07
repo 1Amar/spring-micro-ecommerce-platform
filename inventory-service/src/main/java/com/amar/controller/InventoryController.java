@@ -216,6 +216,70 @@ public class InventoryController {
         }
     }
 
+    @PostMapping
+    public ResponseEntity<Map<String, Object>> createInventory(@RequestBody Map<String, Object> inventoryData) {
+        logger.info("Creating inventory for product ID: {}", inventoryData.get("productId"));
+
+        try {
+            Long productId = Long.valueOf(inventoryData.get("productId").toString());
+            Integer quantity = Integer.valueOf(inventoryData.get("quantity").toString());
+            Integer reorderLevel = inventoryData.get("reorderLevel") != null ? 
+                Integer.valueOf(inventoryData.get("reorderLevel").toString()) : 10;
+            Integer maxStockLevel = inventoryData.get("maxStockLevel") != null ? 
+                Integer.valueOf(inventoryData.get("maxStockLevel").toString()) : Math.max(quantity * 2, 100);
+
+            InventoryDto created = inventoryService.createOrUpdateInventory(productId, quantity, reorderLevel, maxStockLevel);
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("service", "inventory-service");
+            response.put("success", true);
+            response.put("data", created);
+            response.put("message", "Inventory created successfully");
+            response.put("timestamp", System.currentTimeMillis());
+            return ResponseEntity.ok(response);
+        } catch (Exception ex) {
+            logger.error("Failed to create inventory", ex);
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("service", "inventory-service");
+            errorResponse.put("success", false);
+            errorResponse.put("error", "Failed to create inventory: " + ex.getMessage());
+            errorResponse.put("timestamp", System.currentTimeMillis());
+            return ResponseEntity.status(500).body(errorResponse);
+        }
+    }
+
+    @PutMapping("/product/{productId}")
+    public ResponseEntity<Map<String, Object>> updateInventory(@PathVariable Long productId, @RequestBody Map<String, Object> updateData) {
+        logger.info("Updating inventory for product ID: {} with data: {}", productId, updateData);
+
+        try {
+            Integer quantity = Integer.valueOf(updateData.get("quantity").toString());
+            Integer reorderLevel = updateData.get("reorderLevel") != null ? 
+                Integer.valueOf(updateData.get("reorderLevel").toString()) : 10;
+            Integer maxStockLevel = updateData.get("maxStockLevel") != null ? 
+                Integer.valueOf(updateData.get("maxStockLevel").toString()) : Math.max(quantity * 2, 100);
+            
+            // Use the existing createOrUpdateInventory method which handles both create and update
+            InventoryDto updated = inventoryService.createOrUpdateInventory(productId, quantity, reorderLevel, maxStockLevel);
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("service", "inventory-service");
+            response.put("success", true);
+            response.put("data", updated);
+            response.put("message", "Inventory updated successfully");
+            response.put("timestamp", System.currentTimeMillis());
+            return ResponseEntity.ok(response);
+        } catch (Exception ex) {
+            logger.error("Failed to update inventory for product ID: {}", productId, ex);
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("service", "inventory-service");
+            errorResponse.put("success", false);
+            errorResponse.put("error", "Failed to update inventory: " + ex.getMessage());
+            errorResponse.put("timestamp", System.currentTimeMillis());
+            return ResponseEntity.status(500).body(errorResponse);
+        }
+    }
+
     @PostMapping("/reserve")
     public ResponseEntity<Map<String, Object>> reserveStock(@Valid @RequestBody StockReservationRequest request) {
         logger.info("Reserving stock for order ID: {}", request.getOrderId());

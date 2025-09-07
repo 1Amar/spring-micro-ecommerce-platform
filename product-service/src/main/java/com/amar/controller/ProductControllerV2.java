@@ -69,6 +69,20 @@ public class ProductControllerV2 {
     }
     
     /**
+     * Check if product exists by ID
+     */
+    @GetMapping("/{id}/exists")
+    public ResponseEntity<Boolean> checkProductExists(@PathVariable @Min(1) Long id) {
+        logger.debug("Checking if product exists with ID: {}", id);
+        try {
+            productService.getProductById(id);
+            return ResponseEntity.ok(true);
+        } catch (Exception e) {
+            return ResponseEntity.ok(false);
+        }
+    }
+    
+    /**
      * Get product by SKU
      */
     @GetMapping("/sku/{sku}")
