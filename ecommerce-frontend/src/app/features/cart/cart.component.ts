@@ -125,7 +125,8 @@ import { ProductService } from '@core/services/product.service';
                       <button mat-raised-button 
                               color="primary" 
                               class="w-100 mb-3"
-                              [disabled]="data.isUpdating">
+                              [disabled]="data.isUpdating"
+                              (click)="proceedToCheckout()">
                         <mat-icon class="me-2">payment</mat-icon>
                         Proceed to Checkout
                       </button>
@@ -203,7 +204,8 @@ export class CartComponent implements OnInit {
 
   constructor(
     private cartService: CartService,
-    private productService: ProductService
+    private productService: ProductService,
+    private router: Router
   ) {
     this.cartData$ = combineLatest([
       this.cartService.cart$,
@@ -260,6 +262,10 @@ export class CartComponent implements OnInit {
         error: (error) => console.error('Failed to clear cart:', error)
       });
     }
+  }
+
+  proceedToCheckout(): void {
+    this.router.navigate(['/checkout']);
   }
 
   onImageError(event: any): void {
