@@ -111,6 +111,77 @@ public class InventoryServiceClient {
     }
 
     /**
+     * Create inventory record for a new product
+     */
+    public boolean createInventory(Long productId, Integer quantity, Integer reorderLevel) {
+        logger.debug("Creating inventory for product ID: {} with quantity: {}", productId, quantity);
+        
+        return circuitBreaker.run(() -> {
+            try {
+                Map<String, Object> inventoryData = Map.of(
+                    "productId", productId,
+                    "quantity", quantity,
+                    "reservedQuantity", 0,
+                    "availableQuantity", quantity,
+                    "reorderLevel", reorderLevel != null ? reorderLevel : 10,
+                    "maxStockLevel", Math.max(quantity * 2, 100),
+                    "isLowStock", false
+                );
+                
+                String response = webClient.post()
+                    .uri("/api/v1/inventory")
+                    .bodyValue(inventoryData)
+                    .retrieve()
+                    .bodyToMono(String.class)
+                    .timeout(Duration.ofMillis(timeoutMs))
+                    .block();
+
+                return parseSuccessResponse(response);
+                
+            } catch (Exception ex) {
+                logger.error("Error creating inventory for product ID: {} quantity: {}", productId, quantity, ex);
+                return false;
+            }
+        }, throwable -> {
+            logger.error("Circuit breaker fallback triggered for inventory creation", throwable);
+            return false;
+        });
+    }
+
+    /**
+     * Update inventory quantity for an existing product
+     */
+    public boolean updateInventory(Long productId, Integer quantity) {
+        logger.debug("Updating inventory for product ID: {} with quantity: {}", productId, quantity);
+        
+        return circuitBreaker.run(() -> {
+            try {
+                Map<String, Object> updateData = Map.of(
+                    "quantity", quantity,
+                    "availableQuantity", quantity
+                );
+                
+                String response = webClient.put()
+                    .uri("/api/v1/inventory/product/{productId}", productId)
+                    .bodyValue(updateData)
+                    .retrieve()
+                    .bodyToMono(String.class)
+                    .timeout(Duration.ofMillis(timeoutMs))
+                    .block();
+
+                return parseSuccessResponse(response);
+                
+            } catch (Exception ex) {
+                logger.error("Error updating inventory for product ID: {} quantity: {}", productId, quantity, ex);
+                return false;
+            }
+        }, throwable -> {
+            logger.error("Circuit breaker fallback triggered for inventory update", throwable);
+            return false;
+        });
+    }
+
+    /**
      * Check if a specific quantity is available for a product
      */
     public boolean checkAvailability(Long productId, Integer quantity) {
@@ -212,6 +283,19 @@ public class InventoryServiceClient {
             
         } catch (Exception ex) {
             logger.error("Error parsing availability response: {}", response, ex);
+            return false;
+        }
+    }
+
+    /**
+     * Parse generic success response
+     */
+    private boolean parseSuccessResponse(String response) {
+        try {
+            JsonNode root = objectMapper.readTree(response);
+            return root.has("success") && root.get("success").asBoolean();
+        } catch (Exception ex) {
+            logger.error("Error parsing success response: {}", response, ex);
             return false;
         }
     }

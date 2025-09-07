@@ -1,0 +1,281 @@
+<div class="product-form-dialog">
+  
+  <!-- Dialog Header -->
+  <div mat-dialog-title class="dialog-header">
+    <div class="title-content">
+      <mat-icon>{{ isEditMode ? 'edit' : 'add_shopping_cart' }}</mat-icon>
+      <h2>{{ isEditMode ? 'Edit Product' : 'Create New Product' }}</h2>
+    </div>
+    <button mat-icon-button 
+            (click)="onCancel()" 
+            class="close-btn"
+            type="button">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <!-- Dialog Content -->
+  <div mat-dialog-content class="dialog-content">
+    <form [formGroup]="productForm" class="product-form" novalidate>
+      
+      <!-- Basic Information Section -->
+      <div class="form-section">
+        <h3>
+          <mat-icon>info</mat-icon>
+          Basic Information
+        </h3>
+        
+        <div class="form-row">
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Product Name *</mat-label>
+            <input matInput 
+                   formControlName="name" 
+                   placeholder="Enter product name">
+            <mat-error *ngIf="productForm.get('name')?.invalid && productForm.get('name')?.touched">
+              {{ getErrorMessage('name') }}
+            </mat-error>
+          </mat-form-field>
+        </div>
+
+        <div class="form-row">
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Description *</mat-label>
+            <textarea matInput 
+                      formControlName="description" 
+                      rows="4"
+                      placeholder="Enter product description">
+            </textarea>
+            <mat-error *ngIf="productForm.get('description')?.invalid && productForm.get('description')?.touched">
+              {{ getErrorMessage('description') }}
+            </mat-error>
+          </mat-form-field>
+        </div>
+
+        <div class="form-row">
+          <mat-form-field appearance="outline" class="half-width">
+            <mat-label>Brand</mat-label>
+            <mat-select formControlName="brand">
+              <mat-option value="">No Brand</mat-option>
+              <mat-option *ngFor="let brand of brands" [value]="brand">
+                {{ brand }}
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="half-width">
+            <mat-label>Price *</mat-label>
+            <input matInput 
+                   type="number" 
+                   formControlName="price" 
+                   min="0" 
+                   step="0.01">
+            <span matPrefix>$&nbsp;</span>
+            <mat-error *ngIf="productForm.get('price')?.invalid && productForm.get('price')?.touched">
+              {{ getErrorMessage('price') }}
+            </mat-error>
+          </mat-form-field>
+        </div>
+      </div>
+
+      <!-- Product Identifiers Section -->
+      <div class="form-section">
+        <h3>
+          <mat-icon>qr_code</mat-icon>
+          Product Identifiers
+        </h3>
+        
+        <div class="form-row">
+          <mat-form-field appearance="outline" class="half-width">
+            <mat-label>SKU *</mat-label>
+            <input matInput 
+                   formControlName="sku" 
+                   placeholder="Enter SKU">
+            <button matSuffix 
+                    mat-icon-button 
+                    type="button"
+                    (click)="onGenerateSku()"
+                    matTooltip="Generate SKU">
+              <mat-icon>auto_fix_high</mat-icon>
+            </button>
+            <mat-error *ngIf="productForm.get('sku')?.invalid && productForm.get('sku')?.touched">
+              {{ getErrorMessage('sku') }}
+            </mat-error>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="half-width">
+            <mat-label>URL Slug *</mat-label>
+            <input matInput 
+                   formControlName="slug" 
+                   placeholder="product-url-slug">
+            <mat-hint>Used in product URLs</mat-hint>
+            <mat-error *ngIf="productForm.get('slug')?.invalid && productForm.get('slug')?.touched">
+              {{ getErrorMessage('slug') }}
+            </mat-error>
+          </mat-form-field>
+        </div>
+      </div>
+
+      <!-- Images Section -->
+      <div class="form-section">
+        <h3>
+          <mat-icon>image</mat-icon>
+          Product Images
+        </h3>
+        
+        <div class="form-row">
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Main Image URL</mat-label>
+            <input matInput 
+                   formControlName="imageUrl" 
+                   placeholder="https://example.com/product-image.jpg">
+            <mat-error *ngIf="productForm.get('imageUrl')?.invalid && productForm.get('imageUrl')?.touched">
+              {{ getErrorMessage('imageUrl') }}
+            </mat-error>
+          </mat-form-field>
+        </div>
+
+        <div class="form-row">
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Thumbnail URL</mat-label>
+            <input matInput 
+                   formControlName="thumbnailUrl" 
+                   placeholder="https://example.com/product-thumb.jpg">
+            <mat-hint>Optional - smaller version of main image</mat-hint>
+          </mat-form-field>
+        </div>
+      </div>
+
+      <!-- Inventory Section -->
+      <div class="form-section">
+        <h3>
+          <mat-icon>inventory</mat-icon>
+          Inventory Management
+        </h3>
+        
+        <div class="form-row">
+          <mat-form-field appearance="outline" class="half-width">
+            <mat-label>Stock Quantity *</mat-label>
+            <input matInput 
+                   type="number" 
+                   formControlName="stockQuantity" 
+                   min="0">
+            <mat-error *ngIf="productForm.get('stockQuantity')?.invalid && productForm.get('stockQuantity')?.touched">
+              {{ getErrorMessage('stockQuantity') }}
+            </mat-error>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="half-width">
+            <mat-label>Low Stock Threshold *</mat-label>
+            <input matInput 
+                   type="number" 
+                   formControlName="lowStockThreshold" 
+                   min="0">
+            <mat-hint>Alert when stock reaches this level</mat-hint>
+            <mat-error *ngIf="productForm.get('lowStockThreshold')?.invalid && productForm.get('lowStockThreshold')?.touched">
+              {{ getErrorMessage('lowStockThreshold') }}
+            </mat-error>
+          </mat-form-field>
+        </div>
+      </div>
+
+      <!-- Product Specifications Section -->
+      <div class="form-section">
+        <h3>
+          <mat-icon>settings</mat-icon>
+          Product Specifications
+        </h3>
+        
+        <div class="form-row">
+          <mat-form-field appearance="outline" class="half-width">
+            <mat-label>Weight (kg)</mat-label>
+            <input matInput 
+                   type="number" 
+                   formControlName="weight" 
+                   min="0" 
+                   step="0.1">
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="half-width">
+            <mat-label>Dimensions</mat-label>
+            <input matInput 
+                   formControlName="dimensions" 
+                   placeholder="L x W x H (cm)">
+          </mat-form-field>
+        </div>
+
+        <div class="form-row">
+          <mat-form-field appearance="outline" class="third-width">
+            <mat-label>Color</mat-label>
+            <input matInput formControlName="color">
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="third-width">
+            <mat-label>Size</mat-label>
+            <input matInput formControlName="size">
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="third-width">
+            <mat-label>Material</mat-label>
+            <input matInput formControlName="material">
+          </mat-form-field>
+        </div>
+      </div>
+
+      <!-- Settings Section -->
+      <div class="form-section">
+        <h3>
+          <mat-icon>tune</mat-icon>
+          Product Settings
+        </h3>
+        
+        <div class="form-row">
+          <div class="checkbox-group">
+            <mat-checkbox formControlName="isActive">
+              Product is Active
+            </mat-checkbox>
+            <mat-hint>Inactive products are not visible to customers</mat-hint>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="checkbox-group">
+            <mat-checkbox formControlName="isFeatured">
+              Featured Product
+            </mat-checkbox>
+            <mat-hint>Featured products appear prominently on the site</mat-hint>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="checkbox-group">
+            <mat-checkbox formControlName="trackInventory">
+              Track Inventory
+            </mat-checkbox>
+            <mat-hint>Enable inventory tracking for this product</mat-hint>
+          </div>
+        </div>
+      </div>
+
+    </form>
+  </div>
+
+  <!-- Dialog Actions -->
+  <div mat-dialog-actions class="dialog-actions">
+    <button mat-button 
+            (click)="onCancel()" 
+            type="button"
+            class="cancel-btn">
+      Cancel
+    </button>
+    <button mat-raised-button 
+            color="primary"
+            (click)="onSubmit()" 
+            type="button"
+            [disabled]="productForm.invalid"
+            class="submit-btn">
+      <mat-icon>{{ isEditMode ? 'save' : 'add' }}</mat-icon>
+      {{ isEditMode ? 'Update Product' : 'Create Product' }}
+    </button>
+  </div>
+
+</div>

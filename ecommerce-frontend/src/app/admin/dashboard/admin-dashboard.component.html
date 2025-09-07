@@ -1,0 +1,179 @@
+<div class="dashboard-container">
+  
+  <!-- Page Header -->
+  <div class="dashboard-header">
+    <div class="header-content">
+      <h2 class="dashboard-title">
+        <mat-icon>dashboard</mat-icon>
+        Dashboard Overview
+      </h2>
+      <button mat-raised-button 
+              color="primary" 
+              (click)="refreshStats()"
+              [disabled]="loading">
+        <mat-icon>refresh</mat-icon>
+        Refresh
+      </button>
+    </div>
+  </div>
+
+  <!-- Loading Spinner -->
+  <div *ngIf="loading" class="loading-container">
+    <mat-spinner diameter="50"></mat-spinner>
+    <p>Loading dashboard data...</p>
+  </div>
+
+  <!-- Dashboard Content -->
+  <div *ngIf="!loading" class="dashboard-content">
+    
+    <!-- Statistics Cards Row -->
+    <div class="stats-grid">
+      
+      <!-- Total Products Card -->
+      <mat-card class="stat-card products-card">
+        <mat-card-header>
+          <div mat-card-avatar class="stat-avatar primary-bg">
+            <mat-icon>inventory_2</mat-icon>
+          </div>
+          <mat-card-title>Total Products</mat-card-title>
+          <mat-card-subtitle>Active products in catalog</mat-card-subtitle>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="stat-number">{{ stats.totalProducts.toLocaleString() }}</div>
+        </mat-card-content>
+        <mat-card-actions>
+          <a mat-button routerLink="/admin/products" color="primary">
+            View All Products
+          </a>
+        </mat-card-actions>
+      </mat-card>
+
+      <!-- Low Stock Alerts Card -->
+      <mat-card class="stat-card alerts-card">
+        <mat-card-header>
+          <div mat-card-avatar class="stat-avatar warn-bg">
+            <mat-icon>warning</mat-icon>
+          </div>
+          <mat-card-title>Low Stock Alerts</mat-card-title>
+          <mat-card-subtitle>Products needing attention</mat-card-subtitle>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="stat-number">{{ stats.lowStockAlerts }}</div>
+        </mat-card-content>
+        <mat-card-actions>
+          <a mat-button routerLink="/admin/inventory" color="warn">
+            Manage Inventory
+          </a>
+        </mat-card-actions>
+      </mat-card>
+
+      <!-- Total Users Card -->
+      <mat-card class="stat-card users-card">
+        <mat-card-header>
+          <div mat-card-avatar class="stat-avatar accent-bg">
+            <mat-icon>people</mat-icon>
+          </div>
+          <mat-card-title>Total Users</mat-card-title>
+          <mat-card-subtitle>Registered users</mat-card-subtitle>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="stat-number">{{ stats.totalUsers.toLocaleString() }}</div>
+          <div class="stat-detail">
+            {{ stats.activeUsers }} active users
+          </div>
+        </mat-card-content>
+        <mat-card-actions>
+          <a mat-button routerLink="/admin/users" color="accent">
+            Manage Users
+          </a>
+        </mat-card-actions>
+      </mat-card>
+
+      <!-- Out of Stock Card -->
+      <mat-card class="stat-card stock-card">
+        <mat-card-header>
+          <div mat-card-avatar class="stat-avatar error-bg">
+            <mat-icon>remove_shopping_cart</mat-icon>
+          </div>
+          <mat-card-title>Out of Stock</mat-card-title>
+          <mat-card-subtitle>Products unavailable</mat-card-subtitle>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="stat-number">{{ stats.outOfStockProducts }}</div>
+        </mat-card-content>
+        <mat-card-actions>
+          <a mat-button routerLink="/admin/inventory?filter=out-of-stock" color="primary">
+            Restock Items
+          </a>
+        </mat-card-actions>
+      </mat-card>
+
+    </div>
+
+    <!-- Second Row: Quick Actions and Recent Activity -->
+    <div class="dashboard-row">
+      
+      <!-- Quick Actions Section -->
+      <mat-card class="quick-actions-card">
+        <mat-card-header>
+          <mat-card-title>
+            <mat-icon>flash_on</mat-icon>
+            Quick Actions
+          </mat-card-title>
+          <mat-card-subtitle>Common administrative tasks</mat-card-subtitle>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="quick-actions-grid">
+            <button 
+              *ngFor="let action of quickActions"
+              mat-raised-button
+              [color]="action.color"
+              [routerLink]="action.route"
+              class="quick-action-btn">
+              <div class="action-content">
+                <mat-icon class="action-icon">{{ action.icon }}</mat-icon>
+                <div class="action-text">
+                  <div class="action-title">{{ action.title }}</div>
+                  <div class="action-description">{{ action.description }}</div>
+                </div>
+              </div>
+            </button>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <!-- Recent Activity Section -->
+      <mat-card class="activity-card">
+        <mat-card-header>
+          <mat-card-title>
+            <mat-icon>history</mat-icon>
+            Recent Activity
+          </mat-card-title>
+          <mat-card-subtitle>Latest system activities</mat-card-subtitle>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="activity-list">
+            <div 
+              *ngFor="let activity of recentActivities; trackBy: trackActivity"
+              class="activity-item">
+              <div class="activity-icon" [ngClass]="activity.color + '-color'">
+                <mat-icon>{{ activity.icon }}</mat-icon>
+              </div>
+              <div class="activity-content">
+                <div class="activity-message">{{ activity.message }}</div>
+                <div class="activity-time">{{ getRelativeTime(activity.timestamp) }}</div>
+              </div>
+            </div>
+          </div>
+        </mat-card-content>
+        <mat-card-actions>
+          <a mat-button routerLink="/admin/reports" color="primary">
+            View Full Activity Log
+          </a>
+        </mat-card-actions>
+      </mat-card>
+
+    </div>
+
+  </div>
+</div>
