@@ -80,31 +80,32 @@ export class AuthService {
   public async loadUserProfile(): Promise<void> {
     if (this._isLoggedIn) {
       try {
-        const profile = await this.keycloakService.loadUserProfile();
-        const userProfile: UserProfile = {
-          ...profile,
-          roles: this.userRoles
-        };
-        this.userProfileSubject.next(userProfile);
-      } catch (error) {
-        console.warn('Could not load user profile from Keycloak account endpoint. Using token claims instead.');
-        // Fallback to basic profile from token claims
-        try {
-          const basicProfile: UserProfile = {
-            username: this.username,
-            roles: this.userRoles,
-            firstName: this.keycloakService.getKeycloakInstance()?.idTokenParsed?.['given_name'],
-            lastName: this.keycloakService.getKeycloakInstance()?.idTokenParsed?.['family_name'],
-            email: this.keycloakService.getKeycloakInstance()?.idTokenParsed?.['email']
+        // Get user info directly from token claims (avoids CORS issues with Keycloak account endpoint)
+        const keycloakInstance = this.keycloakService.getKeycloakInstance();
+        const tokenParsed = keycloakInstance?.idTokenParsed || keycloakInstance?.tokenParsed;
+        
+        if (tokenParsed) {
+          const userProfile: UserProfile = {
+            username: tokenParsed['preferred_username'] || tokenParsed['email'] || this.username || 'Unknown',
+            firstName: tokenParsed['given_name'] || '',
+            lastName: tokenParsed['family_name'] || '',
+            email: tokenParsed['email'] || '',
+            roles: this.userRoles
           };
-          this.userProfileSubject.next(basicProfile);
-        } catch (tokenError) {
-          console.error('Could not extract user profile from token:', tokenError);
+          this.userProfileSubject.next(userProfile);
+        } else {
+          // Fallback if no token data is available
           this.userProfileSubject.next({
             username: this.username || 'Unknown',
             roles: this.userRoles
           });
         }
+      } catch (error) {
+        console.error('Error loading user profile from token claims:', error);
+        this.userProfileSubject.next({
+          username: this.username || 'Unknown',
+          roles: this.userRoles
+        });
       }
     } else {
       this.userProfileSubject.next(null);

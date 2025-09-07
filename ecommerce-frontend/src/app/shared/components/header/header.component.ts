@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
+import { KeycloakService } from 'keycloak-angular';
 import { AuthService, UserProfile } from '@core/services/auth.service';
 import { CartService } from '@core/services/cart.service';
 import { ProductService } from '@core/services/product.service';
@@ -24,7 +25,8 @@ export class HeaderComponent implements OnInit {
     private authService: AuthService,
     private cartService: CartService,
     private productService: ProductService,
-    private router: Router
+    private router: Router,
+    private keycloakService: KeycloakService
   ) {
     this.userProfile$ = this.authService.userProfile$;
     this.cartItemCount$ = this.cartService.getItemCount();
@@ -70,5 +72,11 @@ export class HeaderComponent implements OnInit {
 
   get username(): string {
     return this.authService.username;
+  }
+
+  get isAdmin(): boolean {
+    return this.keycloakService.isUserInRole('admin') || 
+           this.keycloakService.isUserInRole('ADMIN') ||
+           this.keycloakService.isUserInRole('administrator');
   }
 }
