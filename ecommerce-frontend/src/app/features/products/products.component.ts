@@ -6,6 +6,7 @@ import { PageEvent } from '@angular/material/paginator';
 import { Product, ProductSearchResult, ProductCategory } from '@shared/models/product.model';
 import { ProductService } from '@core/services/product.service';
 import { CartService } from '@core/services/cart.service';
+import { InventoryService, InventoryDto } from '@core/services/inventory.service';
 import { AddToCartRequest } from '@shared/models/cart.model';
 import { Page, PageRequest, ProductFilters } from '@shared/models/page.model';
 
@@ -148,6 +149,11 @@ import { Page, PageRequest, ProductFilters } from '@shared/models/page.model';
                       <mat-chip class="bestseller-badge" *ngIf="product.isBestSeller">
                         Best Seller
                       </mat-chip>
+                      <!-- Stock Status Badge -->
+                      <mat-chip [ngClass]="getStockBadgeClasses(product)" 
+                                *ngIf="hasStockStatus(product)">
+                        {{ getStockStatusText(product) }}
+                      </mat-chip>
                     </div>
                   </div>
                   
@@ -161,6 +167,14 @@ import { Page, PageRequest, ProductFilters } from '@shared/models/page.model';
                       <span *ngIf="product.compareAtPrice" class="original-price">
                         {{ product.compareAtPrice | currency }}
                       </span>
+                    </div>
+                    
+                    <!-- Show stock information -->
+                    <div class="stock-info" *ngIf="isLowStock(product) && getAvailableQuantity(product)">
+                      <small class="text-warning">
+                        <mat-icon class="small-icon">warning</mat-icon>
+                        Only {{ getAvailableQuantity(product) }} left
+                      </small>
                     </div>
                     
                     <div class="product-rating" *ngIf="product.stars">
@@ -179,11 +193,12 @@ import { Page, PageRequest, ProductFilters } from '@shared/models/page.model';
                       <mat-icon>visibility</mat-icon>
                       View Details
                     </button>
-                    <button mat-raised-button color="primary" 
-                           [disabled]="!product.inStock"
+                    <button mat-raised-button 
+                           [color]="canAddToCart(product) ? 'primary' : 'warn'"
+                           [disabled]="!canAddToCart(product)"
                            (click)="addToCart(product)">
                       <mat-icon>shopping_cart</mat-icon>
-                      {{ product.inStock ? 'Add to Cart' : 'Out of Stock' }}
+                      {{ getAddToCartButtonText(product) }}
                     </button>
                   </mat-card-actions>
                 </mat-card>
@@ -335,6 +350,32 @@ import { Page, PageRequest, ProductFilters } from '@shared/models/page.model';
       color: #212529;
     }
     
+    .stock-badge.bg-success {
+      background: #28a745;
+      color: white;
+    }
+    
+    .stock-badge.bg-warning {
+      background: #ffc107;
+      color: #212529;
+    }
+    
+    .stock-badge.bg-danger {
+      background: #dc3545;
+      color: white;
+    }
+    
+    .stock-info {
+      margin: 0.5rem 0;
+    }
+    
+    .small-icon {
+      font-size: 1rem;
+      width: 1rem;
+      height: 1rem;
+      vertical-align: middle;
+    }
+    
     .product-info {
       flex: 1;
     }
@@ -463,6 +504,7 @@ export class ProductsComponent implements OnInit, OnDestroy {
   constructor(
     public productService: ProductService,
     private cartService: CartService,
+    private inventoryService: InventoryService,
     private route: ActivatedRoute,
     private router: Router
   ) {}
@@ -545,6 +587,9 @@ export class ProductsComponent implements OnInit, OnDestroy {
         this.totalPages = result.totalPages || 0;
         this.currentPage = result.number || 0;
         this.isLoading = false;
+        
+        // Load inventory data for the products
+        this.loadInventoryForProducts();
       }
     });
   }
@@ -624,6 +669,50 @@ export class ProductsComponent implements OnInit, OnDestroy {
     this.router.navigate(['/products', product.id]);
   }
 
+  private loadInventoryForProducts(): void {
+    if (this.products.length === 0) return;
+
+    const productIds = this.products.map(p => p.id);
+    
+    this.inventoryService.getInventoryForProducts(productIds)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (inventories) => {
+          this.enrichProductsWithInventory(inventories);
+        },
+        error: (error) => {
+          console.error('Failed to load inventory data:', error);
+          // Continue without inventory data - just log the error
+        }
+      });
+  }
+
+  private enrichProductsWithInventory(inventories: InventoryDto[]): void {
+    const inventoryMap = new Map<number, InventoryDto>();
+    inventories.forEach(inv => inventoryMap.set(inv.productId, inv));
+
+    this.products.forEach(product => {
+      const inventory = inventoryMap.get(product.id);
+      if (inventory) {
+        const stockStatus = this.inventoryService.getStockStatus(inventory);
+        // Update the product with inventory data
+        product.inStock = stockStatus.inStock;
+        product.lowStock = stockStatus.isLowStock;
+        product.stockQuantity = inventory.availableQuantity;
+        
+        // Add extra properties for UI display
+        (product as any).availableQuantity = inventory.availableQuantity;
+        (product as any).isLowStock = stockStatus.isLowStock;
+        (product as any).stockStatus = stockStatus.stockStatus;
+      } else {
+        // Default values when no inventory data available
+        product.inStock = false;
+        product.stockQuantity = 0;
+        (product as any).stockStatus = 'OUT_OF_STOCK';
+      }
+    });
+  }
+
   addToCart(product: Product): void {
     if (!product.inStock) {
       return;
@@ -652,5 +741,53 @@ export class ProductsComponent implements OnInit, OnDestroy {
 
   getStars(rating: number): number[] {
     return Array(5).fill(0).map((_, i) => i + 1);
+  }
+
+  // Stock status utility methods for template
+  getStockStatusText(product: Product): string {
+    const stockStatus = (product as any).stockStatus;
+    if (!stockStatus) return 'Unknown';
+    return this.inventoryService.getStockStatusText(stockStatus, (product as any).availableQuantity);
+  }
+
+  getStockStatusClass(product: Product): string {
+    const stockStatus = (product as any).stockStatus;
+    if (!stockStatus) return 'badge bg-secondary';
+    return this.inventoryService.getStockStatusClass(stockStatus);
+  }
+
+  canAddToCart(product: Product): boolean {
+    return product.inStock === true && product.stockQuantity > 0;
+  }
+
+  getAddToCartButtonText(product: Product): string {
+    if (!product.inStock) return 'Out of Stock';
+    if ((product as any).isLowStock) return 'Add to Cart (Limited)';
+    return 'Add to Cart';
+  }
+
+  // Helper methods for template
+  hasStockStatus(product: Product): boolean {
+    return !!(product as any).stockStatus;
+  }
+
+  isLowStock(product: Product): boolean {
+    return !!(product as any).isLowStock;
+  }
+
+  getAvailableQuantity(product: Product): number {
+    return (product as any).availableQuantity || 0;
+  }
+
+  getStockBadgeClasses(product: Product): string[] {
+    const stockStatus = (product as any).stockStatus;
+    const classes = ['stock-badge'];
+    
+    if (stockStatus === 'IN_STOCK') classes.push('bg-success');
+    else if (stockStatus === 'LOW_STOCK') classes.push('bg-warning');
+    else if (stockStatus === 'OUT_OF_STOCK') classes.push('bg-danger');
+    else classes.push('bg-secondary');
+    
+    return classes;
   }
 }
