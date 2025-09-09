@@ -1,0 +1,197 @@
+<div class="category-page-container">
+  <!-- Breadcrumb Navigation -->
+  <nav class="breadcrumb-nav" aria-label="breadcrumb">
+    <div class="container-fluid">
+      <ol class="breadcrumb">
+        <li class="breadcrumb-item">
+          <a routerLink="/home">
+            <mat-icon>home</mat-icon>
+            Home
+          </a>
+        </li>
+        <li class="breadcrumb-item">
+          <a routerLink="/products">Products</a>
+        </li>
+        <li class="breadcrumb-item active" *ngIf="category">
+          {{ category.name }}
+        </li>
+        <li class="breadcrumb-item active" *ngIf="!category">
+          Category {{ categoryId }}
+        </li>
+      </ol>
+    </div>
+  </nav>
+
+  <!-- Category Header -->
+  <div class="category-header">
+    <div class="container-fluid">
+      <div class="category-title-section">
+        <h1 class="category-title">
+          <mat-icon class="category-icon">category</mat-icon>
+          {{ category?.name || 'Category Products' }}
+        </h1>
+        <p class="category-description" *ngIf="category?.description">
+          {{ category?.description }}
+        </p>
+        <div class="category-stats" *ngIf="!isLoading && !error">
+          <span class="product-count">{{ totalProducts }} products available</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="container-fluid">
+    <!-- Controls Section -->
+    <div class="controls-section" *ngIf="!isLoading && !error && products.length > 0">
+      <div class="results-info">
+        <span>
+          Showing {{ (currentPage * pageSize) + 1 }} - {{ Math.min((currentPage + 1) * pageSize, totalProducts) }} 
+          of {{ totalProducts }} products
+        </span>
+      </div>
+      
+      <div class="sort-controls">
+        <span class="sort-label">Sort by:</span>
+        <div class="sort-buttons">
+          <button *ngFor="let option of sortOptions" 
+                  mat-button
+                  [class.active]="sortBy === option.value"
+                  (click)="onSortChange(option.value)">
+            {{ option.label }}
+            <mat-icon *ngIf="sortBy === option.value" class="sort-direction">
+              {{ sortDir === 'asc' ? 'arrow_upward' : 'arrow_downward' }}
+            </mat-icon>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Loading State -->
+    <div *ngIf="isLoading" class="loading-container">
+      <mat-spinner diameter="40"></mat-spinner>
+      <p class="loading-text">Loading category products...</p>
+    </div>
+
+    <!-- Error State -->
+    <div *ngIf="error && !isLoading" class="error-container">
+      <mat-icon color="warn">error</mat-icon>
+      <h2>Failed to load category products</h2>
+      <p>{{ error }}</p>
+      <button mat-raised-button color="primary" (click)="retry()">
+        <mat-icon>refresh</mat-icon>
+        Retry
+      </button>
+    </div>
+
+    <!-- Products Grid -->
+    <div *ngIf="!isLoading && !error" class="products-content">
+      <!-- Product Grid -->
+      <div class="product-grid" *ngIf="products.length > 0">
+        <mat-card *ngFor="let product of products" 
+                 class="product-card"
+                 [style.cursor]="'pointer'"
+                 (click)="viewProduct(product)">
+          
+          <div class="product-image-container">
+            <img mat-card-image 
+                 [src]="productService.getProductImageUrl(product)" 
+                 [alt]="product.name"
+                 class="product-image"
+                 (error)="onImageError($event)">
+            
+            <!-- Product Badges -->
+            <div class="product-badges">
+              <mat-chip class="sale-badge" *ngIf="productService.isOnSale(product)">
+                Save {{ productService.getSavingsAmount(product) | currency }}
+              </mat-chip>
+              <mat-chip class="bestseller-badge" *ngIf="product.isBestSeller">
+                Best Seller
+              </mat-chip>
+              <!-- Stock Status Badge -->
+              <mat-chip [ngClass]="getStockBadgeClasses(product)" 
+                       *ngIf="getStockStatusText(product) !== 'Unknown'">
+                {{ getStockStatusText(product) }}
+              </mat-chip>
+            </div>
+          </div>
+          
+          <mat-card-content class="product-info">
+            <h3 class="product-name" [title]="product.name">
+              {{ product.name | slice:0:60 }}{{ product.name.length > 60 ? '...' : '' }}
+            </h3>
+            <p class="product-brand" *ngIf="product.brand">{{ product.brand }}</p>
+            
+            <div class="product-pricing">
+              <span class="current-price">{{ product.price | currency }}</span>
+              <span *ngIf="product.compareAtPrice" class="original-price">
+                {{ product.compareAtPrice | currency }}
+              </span>
+            </div>
+            
+            <!-- Stock Info -->
+            <div class="stock-info" *ngIf="isLowStock(product) && canAddToCart(product)">
+              <small class="text-warning">
+                <mat-icon class="small-icon">warning</mat-icon>
+                Only {{ getAvailableQuantity(product) }} left
+              </small>
+            </div>
+            
+            <div class="product-rating" *ngIf="product.stars">
+              <div class="stars">
+                <mat-icon *ngFor="let star of getStars(product.stars)" 
+                         [class.filled]="star <= product.stars">
+                  {{ star <= product.stars ? 'star' : 'star_border' }}
+                </mat-icon>
+              </div>
+              <span class="review-count">({{ product.reviewCount || 0 }} reviews)</span>
+            </div>
+          </mat-card-content>
+          
+          <mat-card-actions class="product-actions">
+            <button mat-button color="primary" (click)="viewProduct(product); $event.stopPropagation()">
+              <mat-icon>visibility</mat-icon>
+              View Details
+            </button>
+            <button mat-raised-button 
+                   [color]="canAddToCart(product) ? 'primary' : 'warn'"
+                   [disabled]="!canAddToCart(product)"
+                   (click)="addToCart(product); $event.stopPropagation()">
+              <mat-icon>shopping_cart</mat-icon>
+              {{ getAddToCartButtonText(product) }}
+            </button>
+          </mat-card-actions>
+        </mat-card>
+      </div>
+
+      <!-- No Products -->
+      <div *ngIf="products.length === 0" class="no-products">
+        <mat-icon>inventory_2</mat-icon>
+        <h3>No products found in this category</h3>
+        <p>This category doesn't have any products at the moment.</p>
+        <button mat-raised-button color="primary" routerLink="/products">
+          Browse All Products
+        </button>
+      </div>
+
+      <!-- Pagination -->
+      <div class="pagination-container" *ngIf="totalProducts > pageSize">
+        <mat-paginator
+          [length]="totalProducts"
+          [pageSize]="pageSize"
+          [pageIndex]="currentPage"
+          [pageSizeOptions]="pageSizeOptions"
+          (page)="onPageChange($event)"
+          showFirstLastButtons>
+        </mat-paginator>
+      </div>
+    </div>
+
+    <!-- Back to Categories -->
+    <div class="back-to-categories" *ngIf="!isLoading">
+      <button mat-stroked-button routerLink="/products">
+        <mat-icon>arrow_back</mat-icon>
+        Back to All Products
+      </button>
+    </div>
+  </div>
+</div>
