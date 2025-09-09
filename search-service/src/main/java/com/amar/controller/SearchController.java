@@ -14,7 +14,9 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -284,6 +286,40 @@ public class SearchController {
             errorResponse.put("timestamp", System.currentTimeMillis());
             
             return ResponseEntity.status(500).body(errorResponse);
+        }
+    }
+
+    /**
+     * Get search suggestions for autocomplete functionality
+     */
+    @GetMapping("/suggestions")
+    public ResponseEntity<List<com.amar.dto.SuggestionDto>> getSuggestions(
+            @RequestParam(value = "query") String query,
+            @RequestParam(value = "limit", defaultValue = "8") int limit) {
+        
+        String correlationId = MDC.get("correlationId");
+        if (correlationId == null) {
+            correlationId = "suggestions-" + UUID.randomUUID().toString();
+            MDC.put("correlationId", correlationId);
+        }
+        
+        logger.info("Search service: Suggestions requested - query: '{}', limit: {}, correlationId: {}", 
+                   query, limit, correlationId);
+        
+        try {
+            List<com.amar.dto.SuggestionDto> suggestions = searchService.getSuggestions(query, limit);
+            
+            logger.info("Search service: Suggestions completed - query: '{}', suggestions: {}, correlationId: {}", 
+                       query, suggestions.size(), correlationId);
+            
+            return ResponseEntity.ok(suggestions);
+            
+        } catch (Exception e) {
+            logger.error("Search service: Suggestions failed - query: '{}', correlationId: {}, error: {}", 
+                        query, correlationId, e.getMessage(), e);
+            
+            // Return empty list on error rather than error response
+            return ResponseEntity.ok(new ArrayList<>());
         }
     }
 }

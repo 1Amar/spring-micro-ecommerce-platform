@@ -7,6 +7,7 @@ import { AuthService, UserProfile } from '@core/services/auth.service';
 import { CartService } from '@core/services/cart.service';
 import { ProductService } from '@core/services/product.service';
 import { ProductCategory } from '@shared/models/product.model';
+import { SearchSuggestion } from '@shared/models/search.model';
 
 @Component({
   selector: 'app-header',
@@ -18,7 +19,6 @@ export class HeaderComponent implements OnInit {
   cartItemCount$: Observable<number>;
   categories$: Observable<ProductCategory[]>;
   isLoggedIn$: Observable<boolean>;
-  searchQuery = '';
   isMenuOpen = false;
 
   constructor(
@@ -44,12 +44,36 @@ export class HeaderComponent implements OnInit {
     }, 100);
   }
 
-  onSearch(): void {
-    if (this.searchQuery.trim()) {
+  onSearch(query: string): void {
+    if (query.trim()) {
       this.router.navigate(['/search'], { 
-        queryParams: { q: this.searchQuery.trim() } 
+        queryParams: { q: query.trim() } 
       });
-      this.searchQuery = '';
+    }
+  }
+
+  onSuggestionSelected(suggestion: SearchSuggestion): void {
+    // Handle different suggestion types
+    switch (suggestion.type) {
+      case 'BRAND':
+        // Could navigate to brand-specific search or page
+        this.router.navigate(['/search'], { 
+          queryParams: { q: suggestion.text, type: 'brand' } 
+        });
+        break;
+      case 'CATEGORY':
+        // Could navigate to category page if we can determine category ID
+        this.router.navigate(['/search'], { 
+          queryParams: { q: suggestion.text, type: 'category' } 
+        });
+        break;
+      case 'PRODUCT':
+      default:
+        // Regular search
+        this.router.navigate(['/search'], { 
+          queryParams: { q: suggestion.text } 
+        });
+        break;
     }
   }
 

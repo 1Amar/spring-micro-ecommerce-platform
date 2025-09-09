@@ -48,3 +48,11 @@ export interface SearchStats {
   elasticsearchStatus: string;
   timestamp: number;
 }
+
+export interface SearchSuggestion {
+  text: string;
+  type: 'PRODUCT' | 'BRAND' | 'CATEGORY';
+  count?: number;
+  imageUrl?: string;
+  highlightedText?: string;
+}
