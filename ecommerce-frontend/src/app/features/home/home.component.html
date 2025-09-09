@@ -58,31 +58,48 @@
       <p>Check out our most popular items</p>
     </div>
     
-    <div class="products-grid">
+    <!-- Loading State -->
+    <div *ngIf="isLoading" class="text-center py-4">
+      <mat-spinner diameter="40"></mat-spinner>
+      <p class="mt-2 text-muted">Loading featured products...</p>
+    </div>
+
+    <!-- Products Grid -->
+    <div *ngIf="!isLoading" class="products-grid">
       <mat-card 
-        *ngFor="let product of featuredProducts$ | async" 
+        *ngFor="let product of products" 
         class="product-card"
+        [style.cursor]="'pointer'"
         (click)="onProductClick(product)">
         
         <div class="product-image">
           <img [src]="getProductImageUrl(product)" [alt]="product.name" loading="lazy">
-          <div class="product-badge" *ngIf="product.onSale">
-            <mat-chip color="accent">{{ product.savingsPercentage | number:'1.0-0' }}% OFF</mat-chip>
+          <div class="product-badges">
+            <!-- Sale Badge -->
+            <mat-chip class="sale-badge" *ngIf="product.onSale">
+              {{ product.savingsPercentage | number:'1.0-0' }}% OFF
+            </mat-chip>
+            <!-- Stock Status Badge -->
+            <mat-chip class="stock-badge" 
+                     [ngClass]="{'bg-success': canAddToCart(product), 'bg-warning': isLowStock(product) && canAddToCart(product), 'bg-danger': !canAddToCart(product)}" 
+                     *ngIf="!canAddToCart(product) || isLowStock(product)">
+              {{ getStockStatusText(product) }}
+            </mat-chip>
           </div>
         </div>
         
         <mat-card-content class="product-info">
-          <h3 class="product-name">{{ product.name }}</h3>
+          <h3 class="product-name">{{ product.name | slice:0:50 }}{{ product.name.length > 50 ? '...' : '' }}</h3>
           <p class="product-brand">{{ product.brand }}</p>
           
-          <div class="product-rating">
+          <div class="product-rating" *ngIf="product.stars">
             <div class="stars">
               <mat-icon *ngFor="let star of [1,2,3,4,5]" 
                        [class.filled]="star <= (product.stars || 0)">
                 star
               </mat-icon>
             </div>
-            <span class="rating-count">({{ product.reviewCount }})</span>
+            <span class="rating-count">({{ product.reviewCount || 0 }})</span>
           </div>
           
           <div class="product-pricing">
@@ -91,15 +108,34 @@
               {{ formatPrice(product.compareAtPrice) }}
             </span>
           </div>
+
+          <!-- Stock Info -->
+          <div class="stock-info" *ngIf="isLowStock(product) && canAddToCart(product)">
+            <small class="text-warning">
+              <mat-icon class="small-icon">warning</mat-icon>
+              Only {{ getAvailableQuantity(product) }} left
+            </small>
+          </div>
         </mat-card-content>
         
         <mat-card-actions class="product-actions">
-          <button mat-raised-button color="primary" class="add-to-cart-btn" (click)="$event.stopPropagation()">
-            <mat-icon>add_shopping_cart</mat-icon>
-            Add to Cart
+          <button mat-raised-button 
+                 [color]="canAddToCart(product) ? 'primary' : 'warn'"
+                 [disabled]="!canAddToCart(product)"
+                 class="add-to-cart-btn" 
+                 (click)="onAddToCart(product, $event)">
+            <mat-icon>{{ canAddToCart(product) ? 'add_shopping_cart' : 'remove_shopping_cart' }}</mat-icon>
+            {{ getAddToCartButtonText(product) }}
           </button>
         </mat-card-actions>
       </mat-card>
+    </div>
+
+    <!-- No Products Message -->
+    <div *ngIf="!isLoading && products.length === 0" class="text-center py-4">
+      <mat-icon class="text-muted" style="font-size: 3rem; width: 3rem; height: 3rem;">inventory_2</mat-icon>
+      <h3 class="text-muted mt-2">No products available</h3>
+      <p class="text-muted">All featured products are currently out of stock</p>
     </div>
     
     <div class="text-center mt-4">

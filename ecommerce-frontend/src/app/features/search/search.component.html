@@ -220,14 +220,16 @@
           <div *ngIf="viewMode === 'grid'" class="row g-3">
             <div *ngFor="let product of products; trackBy: trackByProductId" 
                  class="col-xl-3 col-lg-4 col-md-6">
-              <div class="card product-card h-100 shadow-sm">
+              <div class="card product-card h-100 shadow-sm" 
+                   style="cursor: pointer" 
+                   (click)="onViewProduct(product)">
                 <div class="product-image-container">
                   <img [src]="product.imageUrl || '/assets/images/no-image.png'" 
                        [alt]="product.name"
                        class="card-img-top product-image"
                        (error)="setDefaultImage($event)">
                   <div class="product-overlay">
-                    <button class="btn btn-primary btn-sm" (click)="onViewProduct(product)">
+                    <button class="btn btn-primary btn-sm" (click)="onViewProduct(product); $event.stopPropagation()">
                       <mat-icon>visibility</mat-icon>
                       View
                     </button>
@@ -257,7 +259,7 @@
                       </div>
                       <button class="btn btn-sm" 
                               [class]="canAddToCart(product) ? 'btn-primary' : 'btn-secondary'"
-                              (click)="onAddToCart(product)"
+                              (click)="onAddToCart(product); $event.stopPropagation()"
                               [disabled]="!canAddToCart(product) || isLoading">
                         <mat-icon>add_shopping_cart</mat-icon>
                         <span class="d-none d-md-inline ms-1">{{ getAddToCartButtonText(product) }}</span>
@@ -272,7 +274,9 @@
           <!-- List View -->
           <div *ngIf="viewMode === 'list'" class="list-view">
             <div *ngFor="let product of products; trackBy: trackByProductId" 
-                 class="card product-list-item mb-3 shadow-sm">
+                 class="card product-list-item mb-3 shadow-sm"
+                 style="cursor: pointer"
+                 (click)="onViewProduct(product)">
               <div class="row g-0">
                 <div class="col-md-3 col-lg-2">
                   <img [src]="product.imageUrl || '/assets/images/no-image.png'"
@@ -308,13 +312,13 @@
                         </div>
                         <div class="product-actions">
                           <button class="btn btn-outline-primary btn-sm me-2" 
-                                  (click)="onViewProduct(product)">
+                                  (click)="onViewProduct(product); $event.stopPropagation()">
                             <mat-icon>visibility</mat-icon>
                             View
                           </button>
                           <button class="btn btn-sm" 
                                   [class]="canAddToCart(product) ? 'btn-primary' : 'btn-secondary'"
-                                  (click)="onAddToCart(product)"
+                                  (click)="onAddToCart(product); $event.stopPropagation()"
                                   [disabled]="!canAddToCart(product) || isLoading">
                             <mat-icon>add_shopping_cart</mat-icon>
                             {{ getAddToCartButtonText(product) }}

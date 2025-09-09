@@ -135,7 +135,9 @@ import { Page, PageRequest, ProductFilters } from '@shared/models/page.model';
 
               <!-- Product Grid -->
               <div class="product-grid" *ngIf="products.length > 0">
-                <mat-card *ngFor="let product of products" class="product-card">
+                <mat-card *ngFor="let product of products" class="product-card" 
+                         style="cursor: pointer" 
+                         (click)="viewProduct(product)">
                   <div class="product-image-container">
                     <img mat-card-image 
                          [src]="productService.getProductImageUrl(product)" 
@@ -189,14 +191,14 @@ import { Page, PageRequest, ProductFilters } from '@shared/models/page.model';
                   </mat-card-content>
                   
                   <mat-card-actions class="product-actions">
-                    <button mat-button color="primary" (click)="viewProduct(product)">
+                    <button mat-button color="primary" (click)="viewProduct(product); $event.stopPropagation()">
                       <mat-icon>visibility</mat-icon>
                       View Details
                     </button>
                     <button mat-raised-button 
                            [color]="canAddToCart(product) ? 'primary' : 'warn'"
                            [disabled]="!canAddToCart(product)"
-                           (click)="addToCart(product)">
+                           (click)="addToCart(product); $event.stopPropagation()">
                       <mat-icon>shopping_cart</mat-icon>
                       {{ getAddToCartButtonText(product) }}
                     </button>
@@ -317,6 +319,12 @@ import { Page, PageRequest, ProductFilters } from '@shared/models/page.model';
       display: flex;
       flex-direction: column;
       height: 100%;
+      transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    }
+    
+    .product-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
     }
     
     .product-image-container {

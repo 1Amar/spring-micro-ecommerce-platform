@@ -146,15 +146,38 @@
       transform: scale(1.05);
     }
     
-    .product-badge {
+    .product-badges {
       position: absolute;
       top: 12px;
       right: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
       
-      mat-chip {
+      .sale-badge {
         background-color: var(--secondary-color);
         color: white;
         font-weight: 600;
+      }
+
+      .stock-badge {
+        font-weight: 500;
+        font-size: 0.75rem;
+
+        &.bg-success {
+          background-color: #28a745;
+          color: white;
+        }
+
+        &.bg-warning {
+          background-color: #ffc107;
+          color: #212529;
+        }
+
+        &.bg-danger {
+          background-color: #dc3545;
+          color: white;
+        }
       }
     }
   }
@@ -209,6 +232,8 @@
     }
     
     .product-pricing {
+      margin-bottom: 0.75rem;
+      
       .current-price {
         font-size: 1.25rem;
         font-weight: 600;
@@ -220,6 +245,25 @@
         color: var(--text-secondary);
         text-decoration: line-through;
         margin-left: 0.5rem;
+      }
+    }
+
+    .stock-info {
+      margin-bottom: 0.75rem;
+      
+      .small-icon {
+        font-size: 14px;
+        width: 14px;
+        height: 14px;
+        vertical-align: middle;
+      }
+
+      .text-warning {
+        color: #856404;
+        font-size: 0.875rem;
+        display: flex;
+        align-items: center;
+        gap: 4px;
       }
     }
   }

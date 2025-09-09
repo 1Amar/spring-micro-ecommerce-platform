@@ -387,9 +387,8 @@ export class SearchComponent implements OnInit, OnDestroy {
   onViewProduct(product: ProductSearchDto): void {
     if (!product) return;
     
-    // For now, just navigate to products page
-    // Later you can implement a product detail dialog
-    console.log('View product:', product);
+    // Navigate to product detail page
+    this.router.navigate(['/products', product.productId]);
   }
 
   onSearchByBrand(brand: string): void {
