@@ -8,6 +8,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatGridListModule } from '@angular/material/grid-list';
 import { MatChipsModule } from '@angular/material/chips';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
 // Components
 import { HomeComponent } from './home.component';
@@ -25,7 +26,8 @@ import { HomeComponent } from './home.component';
     MatButtonModule,
     MatIconModule,
     MatGridListModule,
-    MatChipsModule
+    MatChipsModule,
+    MatProgressSpinnerModule
   ]
 })
 export class HomeModule { }
