@@ -74,7 +74,8 @@
               </select>
             </div>
 
-            <!-- Brand Filter -->
+            <!-- Brand Filter removed as all products are from Amazon -->
+            <!-- 
             <div class="filter-group mb-3" *ngIf="availableBrands.length > 0">
               <label class="form-label fw-bold">Brand</label>
               <select class="form-select" formControlName="brand" (change)="onFilterChange()">
@@ -84,6 +85,7 @@
                 </option>
               </select>
             </div>
+            -->
 
             <!-- Price Range Filter -->
             <div class="filter-group mb-3">
@@ -241,7 +243,8 @@
                     {{ getTruncatedDescription(product.description, 60) }}
                   </p>
                   <div class="product-meta mb-2">
-                    <span class="badge bg-secondary me-1" *ngIf="product.brand">{{ product.brand }}</span>
+                    <!-- Brand hidden as all products are from Amazon -->
+                    <!-- <span class="badge bg-secondary me-1" *ngIf="product.brand">{{ product.brand }}</span> -->
                     <span class="badge bg-info me-1" *ngIf="product.categoryName">{{ product.categoryName }}</span>
                     <!-- Stock Status Badge -->
                     <span [class]="getStockStatusClass(product)" *ngIf="product.stockStatus">
@@ -293,7 +296,8 @@
                           {{ getTruncatedDescription(product.description, 150) }}
                         </p>
                         <div class="product-meta">
-                          <span class="badge bg-secondary me-2" *ngIf="product.brand">{{ product.brand }}</span>
+                          <!-- Brand hidden as all products are from Amazon -->
+                          <!-- <span class="badge bg-secondary me-2" *ngIf="product.brand">{{ product.brand }}</span> -->
                           <span class="badge bg-info me-2" *ngIf="product.categoryName">{{ product.categoryName }}</span>
                           <!-- Stock Status Badge -->
                           <span [class]="getStockStatusClass(product) + ' me-2'" *ngIf="product.stockStatus">

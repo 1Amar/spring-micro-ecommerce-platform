@@ -1,13 +1,14 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable, BehaviorSubject } from 'rxjs';
-import { map, catchError } from 'rxjs/operators';
+import { Observable, BehaviorSubject, of } from 'rxjs';
+import { map, catchError, debounceTime, distinctUntilChanged, switchMap } from 'rxjs/operators';
 import { environment } from '@environments/environment';
 import { 
   ProductSearchDto, 
   SearchResponseDto, 
   SearchFilters,
-  SearchStats 
+  SearchStats,
+  SearchSuggestion 
 } from '@shared/models/search.model';
 
 @Injectable({
@@ -135,17 +136,41 @@ export class SearchService {
   }
 
   /**
-   * Get search suggestions (placeholder for future autocomplete)
+   * Get search suggestions for real-time autocomplete
    */
-  getSearchSuggestions(query: string): Observable<string[]> {
-    // Placeholder implementation - can be enhanced with backend autocomplete
-    const suggestions = this.getRecentSearches()
-      .filter(search => search.toLowerCase().includes(query.toLowerCase()))
-      .slice(0, 5);
-    
-    return new Promise(resolve => {
-      setTimeout(() => resolve(suggestions), 100);
-    }) as any;
+  getSearchSuggestions(query: string): Observable<SearchSuggestion[]> {
+    if (!query || query.trim().length < 2) {
+      // Return recent searches for very short queries
+      return of(this.getRecentSearches().slice(0, 5).map(search => ({
+        text: search,
+        type: 'PRODUCT' as const,
+        count: 0
+      })));
+    }
+
+    const params = new HttpParams()
+      .set('query', query.trim())
+      .set('limit', '8');
+
+    return this.http.get<SearchSuggestion[]>(`${this.searchApiUrl}/suggestions`, { params })
+      .pipe(
+        map(suggestions => this.transformSuggestions(suggestions, query)),
+        catchError(error => {
+          console.error('Search suggestions failed:', error);
+          return of(this.getFallbackSuggestions(query));
+        })
+      );
+  }
+
+  /**
+   * Get search suggestions with debouncing for real-time input
+   */
+  getSearchSuggestionsDebounced(query$: Observable<string>): Observable<SearchSuggestion[]> {
+    return query$.pipe(
+      debounceTime(300), // Wait 300ms after user stops typing
+      distinctUntilChanged(), // Only emit if query actually changed
+      switchMap(query => this.getSearchSuggestions(query))
+    );
   }
 
   /**
@@ -235,6 +260,51 @@ export class SearchService {
     }
 
     return new Error(message);
+  }
+
+  /**
+   * Transform backend suggestion response with highlighting
+   */
+  private transformSuggestions(suggestions: SearchSuggestion[], originalQuery: string): SearchSuggestion[] {
+    return suggestions.map(suggestion => ({
+      ...suggestion,
+      highlightedText: this.highlightQuery(suggestion.text, originalQuery)
+    }));
+  }
+
+  /**
+   * Highlight matching query text in suggestions
+   */
+  private highlightQuery(text: string, query: string): string {
+    if (!query || query.length < 2) return text;
+    
+    const regex = new RegExp(`(${query})`, 'gi');
+    return text.replace(regex, '<strong>$1</strong>');
+  }
+
+  /**
+   * Get fallback suggestions when API fails
+   */
+  private getFallbackSuggestions(query: string): SearchSuggestion[] {
+    const recentMatches = this.getRecentSearches()
+      .filter(search => search.toLowerCase().includes(query.toLowerCase()))
+      .slice(0, 3)
+      .map(search => ({
+        text: search,
+        type: 'PRODUCT' as const,
+        count: 0,
+        highlightedText: this.highlightQuery(search, query)
+      }));
+
+    // Add the current query as a search suggestion
+    const currentQuerySuggestion: SearchSuggestion = {
+      text: query,
+      type: 'PRODUCT',
+      count: 0,
+      highlightedText: `Search for "${query}"`
+    };
+
+    return [currentQuerySuggestion, ...recentMatches];
   }
 
   /**

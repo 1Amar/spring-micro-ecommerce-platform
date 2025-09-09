@@ -1,0 +1,100 @@
+<div class="search-autocomplete-container">
+  <!-- Search Input -->
+  <div class="search-input-wrapper">
+    <mat-form-field class="search-field" appearance="outline">
+      <mat-icon matPrefix>search</mat-icon>
+      
+      <input #searchInput
+             matInput
+             [formControl]="searchControl"
+             [placeholder]="placeholder"
+             (focus)="onFocus()"
+             (blur)="onBlur()"
+             (keydown)="onKeyDown($event)"
+             autocomplete="off"
+             role="combobox"
+             [attr.aria-expanded]="showSuggestions"
+             [attr.aria-owns]="showSuggestions ? 'suggestions-list' : null"
+             [attr.aria-autocomplete]="'list'">
+      
+      <!-- Loading indicator -->
+      <mat-progress-spinner *ngIf="isLoading" 
+                           matSuffix 
+                           diameter="20" 
+                           mode="indeterminate">
+      </mat-progress-spinner>
+      
+      <!-- Clear button -->
+      <button *ngIf="!isLoading && searchControl.value" 
+              matSuffix 
+              mat-icon-button 
+              (click)="clearSearch()"
+              aria-label="Clear search">
+        <mat-icon>clear</mat-icon>
+      </button>
+      
+      <!-- Search button -->
+      <button matSuffix 
+              mat-icon-button 
+              (click)="performSearch()"
+              [disabled]="isLoading"
+              aria-label="Search">
+        <mat-icon>search</mat-icon>
+      </button>
+    </mat-form-field>
+  </div>
+
+  <!-- Suggestions Dropdown -->
+  <div class="suggestions-dropdown" 
+       *ngIf="showSuggestions" 
+       id="suggestions-list"
+       role="listbox">
+    
+    <!-- Loading state -->
+    <div *ngIf="isLoading" class="suggestion-loading">
+      <mat-spinner diameter="24"></mat-spinner>
+      <span>Searching...</span>
+    </div>
+    
+    <!-- Suggestions list -->
+    <div *ngIf="!isLoading && suggestions.length > 0" class="suggestions-list">
+      <div *ngFor="let suggestion of suggestions; let i = index"
+           class="suggestion-item"
+           [class.selected]="selectedIndex === i"
+           (click)="selectSuggestion(suggestion)"
+           [attr.role]="'option'"
+           [attr.aria-selected]="selectedIndex === i">
+        
+        <div class="suggestion-content">
+          <!-- Icon -->
+          <mat-icon class="suggestion-icon" [class]="'type-' + suggestion.type.toLowerCase()">
+            {{ getSuggestionIcon(suggestion.type) }}
+          </mat-icon>
+          
+          <!-- Text with highlighting -->
+          <div class="suggestion-text">
+            <span class="suggestion-main" [innerHTML]="suggestion.highlightedText || suggestion.text"></span>
+            <span class="suggestion-type" *ngIf="suggestion.type !== 'PRODUCT'">
+              in {{ getSuggestionTypeLabel(suggestion.type) }}
+            </span>
+          </div>
+          
+          <!-- Count badge -->
+          <span class="suggestion-count" *ngIf="suggestion.count && suggestion.count > 0">
+            {{ suggestion.count }}
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    <!-- No suggestions -->
+    <div *ngIf="!isLoading && suggestions.length === 0 && searchControl.value && searchControl.value.length >= 2" 
+         class="no-suggestions">
+      <mat-icon>search_off</mat-icon>
+      <span>No suggestions found</span>
+      <button mat-button (click)="performSearch()" class="search-anyway-btn">
+        Search anyway
+      </button>
+    </div>
+  </div>
+</div>

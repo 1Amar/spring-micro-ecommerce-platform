@@ -22,21 +22,11 @@
 
       <!-- Search Bar -->
       <div class="search-container d-none d-md-flex">
-        <mat-form-field appearance="outline" class="search-field">
-          <input 
-            matInput 
-            [(ngModel)]="searchQuery"
-            (keyup.enter)="onSearch()"
-            placeholder="Search products..."
-            aria-label="Search products">
-          <button 
-            matSuffix 
-            mat-icon-button 
-            (click)="onSearch()"
-            aria-label="Search">
-            <mat-icon>search</mat-icon>
-          </button>
-        </mat-form-field>
+        <app-search-autocomplete
+          placeholder="Search products..."
+          (search)="onSearch($event)"
+          (suggestionSelected)="onSuggestionSelected($event)">
+        </app-search-autocomplete>
       </div>
 
       <!-- Navigation Actions -->
@@ -133,21 +123,12 @@
     
     <!-- Mobile Search -->
     <div class="mobile-search">
-      <mat-form-field appearance="outline" class="w-100">
-        <input 
-          matInput 
-          [(ngModel)]="searchQuery"
-          (keyup.enter)="onSearch(); toggleMenu()"
-          placeholder="Search products..."
-          aria-label="Search products">
-        <button 
-          matSuffix 
-          mat-icon-button 
-          (click)="onSearch(); toggleMenu()"
-          aria-label="Search">
-          <mat-icon>search</mat-icon>
-        </button>
-      </mat-form-field>
+      <app-search-autocomplete
+        class="w-100"
+        placeholder="Search products..."
+        (search)="onSearch($event); toggleMenu()"
+        (suggestionSelected)="onSuggestionSelected($event); toggleMenu()">
+      </app-search-autocomplete>
     </div>
 
     <!-- Mobile Categories -->

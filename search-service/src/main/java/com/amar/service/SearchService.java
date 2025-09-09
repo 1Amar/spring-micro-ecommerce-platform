@@ -3,7 +3,9 @@ package com.amar.service;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -228,6 +230,9 @@ public class SearchService {
 
     private String buildElasticsearchQuery(String query, Pageable pageable) {
         try {
+            // Escape JSON string properly to handle quotes and special characters
+            String escapedQuery = escapeJsonString(query);
+            
             return String.format("{\n" +
                 "  \"query\": {\n" +
                 "    \"bool\": {\n" +
@@ -244,11 +249,23 @@ public class SearchService {
                 "  \"sort\": [\n" +
                 "    { \"_score\": { \"order\": \"desc\" } }\n" +
                 "  ]\n" +
-                "}", query, query, query, pageable.getOffset(), pageable.getPageSize());
+                "}", escapedQuery, escapedQuery, escapedQuery, pageable.getOffset(), pageable.getPageSize());
         } catch (Exception e) {
             logger.error("Failed to build Elasticsearch query", e);
             return "{\"query\": {\"match_all\": {}}}";
         }
+    }
+    
+    /**
+     * Escape JSON string to handle quotes and special characters
+     */
+    private String escapeJsonString(String input) {
+        if (input == null) return "";
+        return input.replace("\\", "\\\\")
+                    .replace("\"", "\\\"")
+                    .replace("\n", "\\n")
+                    .replace("\r", "\\r")
+                    .replace("\t", "\\t");
     }
 
     private List<ProductSearchDocument> parseSearchResults(JsonNode responseJson) {
@@ -293,5 +310,248 @@ public class SearchService {
             logger.error("Failed to parse Elasticsearch response", e);
         }
         return documents;
+    }
+
+    /**
+     * Get search suggestions for autocomplete functionality
+     */
+    public List<com.amar.dto.SuggestionDto> getSuggestions(String query, int limit) {
+        String correlationId = MDC.get("correlationId");
+        if (correlationId == null) {
+            correlationId = "suggestions-" + UUID.randomUUID().toString();
+            MDC.put("correlationId", correlationId);
+        }
+
+        long startTime = System.currentTimeMillis();
+        List<com.amar.dto.SuggestionDto> suggestions = new ArrayList<>();
+
+        try {
+            logger.info("Search service: Getting suggestions - query: '{}', limit: {}, correlationId: {}", 
+                       query, limit, correlationId);
+
+            if (!StringUtils.hasText(query) || query.trim().length() < 2) {
+                return suggestions; // Return empty list for short queries
+            }
+
+            String trimmedQuery = query.trim().toLowerCase();
+
+            // Build Elasticsearch aggregation query for suggestions
+            String suggestionQuery = buildSuggestionQuery(trimmedQuery, limit);
+            
+            HttpHeaders headers = new HttpHeaders();
+            headers.set("Content-Type", "application/json");
+            HttpEntity<String> entity = new HttpEntity<>(suggestionQuery, headers);
+            
+            ResponseEntity<String> response = restTemplate.exchange(
+                elasticsearchUrl + "/products/_search",
+                HttpMethod.POST,
+                entity,
+                String.class
+            );
+
+            // Parse suggestions from Elasticsearch response
+            JsonNode responseJson = objectMapper.readTree(response.getBody());
+            suggestions = parseSuggestionResults(responseJson, trimmedQuery);
+
+            long duration = System.currentTimeMillis() - startTime;
+
+            logger.info("Search service: Suggestions completed - query: '{}', suggestions: {}, duration: {}ms, correlationId: {}", 
+                       query, suggestions.size(), duration, correlationId);
+
+        } catch (Exception e) {
+            long duration = System.currentTimeMillis() - startTime;
+            logger.error("Search service: Suggestions failed - query: '{}', duration: {}ms, correlationId: {}, error: {}", 
+                        query, duration, correlationId, e.getMessage(), e);
+            
+            // Fallback to basic repository search
+            suggestions = getFallbackSuggestions(query, limit);
+        }
+
+        return suggestions;
+    }
+
+    /**
+     * Build Elasticsearch query for suggestions using appropriate queries for different field types
+     */
+    private String buildSuggestionQuery(String query, int limit) {
+        String escapedQuery = escapeJsonString(query);
+        int queryLength = query.trim().length();
+        
+        if (queryLength <= 3) {
+            // For short queries, prioritize categories only with proper case handling
+            String capitalizedQuery = query.trim().substring(0, 1).toUpperCase() + 
+                                    (query.trim().length() > 1 ? query.trim().substring(1).toLowerCase() : "");
+            String escapedCapitalizedQuery = escapeJsonString(capitalizedQuery);
+            
+            return String.format("""
+                {
+                  "size": 0,
+                  "query": {
+                    "prefix": {
+                      "categoryName": {
+                        "value": "%s"
+                      }
+                    }
+                  },
+                  "aggs": {
+                    "categories": {
+                      "terms": {
+                        "field": "categoryName",
+                        "size": %d,
+                        "order": {"_count": "desc"}
+                      }
+                    }
+                  }
+                }
+                """, escapedCapitalizedQuery, limit);
+        } else {
+            // For longer queries, mix categories and products with category priority
+            return String.format("""
+                {
+                  "size": %d,
+                  "query": {
+                    "bool": {
+                      "should": [
+                        {"match": {"categoryName": {"query": "%s", "boost": 10}}},
+                        {"match_phrase_prefix": {"name": {"query": "%s", "boost": 1}}}
+                      ],
+                      "minimum_should_match": 1
+                    }
+                  },
+                  "_source": ["name", "categoryName"],
+                  "collapse": {
+                    "field": "categoryName"
+                  }
+                }
+                """, Math.min(limit, 6), escapedQuery, escapedQuery);
+        }
+    }
+
+    /**
+     * Parse suggestion results from both aggregation and hits response
+     */
+    private List<com.amar.dto.SuggestionDto> parseSuggestionResults(JsonNode responseJson, String originalQuery) {
+        List<com.amar.dto.SuggestionDto> suggestions = new ArrayList<>();
+        
+        try {
+            // Check if we have aggregations (short query response)
+            if (responseJson.has("aggregations") && responseJson.get("aggregations").has("categories")) {
+                JsonNode categories = responseJson.get("aggregations").get("categories").get("buckets");
+                for (JsonNode bucket : categories) {
+                    String categoryName = bucket.get("key").asText();
+                    int count = bucket.get("doc_count").asInt();
+                    suggestions.add(new com.amar.dto.SuggestionDto(
+                        categoryName, com.amar.dto.SuggestionDto.SuggestionType.CATEGORY, count));
+                }
+            } else {
+                // Parse hits response (longer query)
+                JsonNode hits = responseJson.get("hits").get("hits");
+                Set<String> seenCategories = new HashSet<>();
+                
+                for (JsonNode hit : hits) {
+                    JsonNode source = hit.get("_source");
+                    
+                    // Prioritize category suggestions
+                    if (source.has("categoryName")) {
+                        String categoryName = source.get("categoryName").asText();
+                        if (!seenCategories.contains(categoryName)) {
+                            suggestions.add(new com.amar.dto.SuggestionDto(
+                                categoryName, com.amar.dto.SuggestionDto.SuggestionType.CATEGORY, 1));
+                            seenCategories.add(categoryName);
+                        }
+                    }
+                    
+                    // Add product suggestions only if we have space and categories are covered
+                    if (source.has("name") && suggestions.size() < 6) {
+                        String productName = source.get("name").asText();
+                        // Limit product name length for better UX
+                        if (productName.length() > 80) {
+                            productName = productName.substring(0, 77) + "...";
+                        }
+                        suggestions.add(new com.amar.dto.SuggestionDto(
+                            productName, com.amar.dto.SuggestionDto.SuggestionType.PRODUCT, 1));
+                    }
+                }
+            }
+            
+        } catch (Exception e) {
+            logger.error("Failed to parse suggestion results", e);
+        }
+        
+        // Sort suggestions - categories first, then products, limit to 8 max
+        return suggestions.stream()
+            .sorted((a, b) -> {
+                if (a.getType() == b.getType()) {
+                    // Within same type, sort categories by count (popularity)
+                    if (a.getType() == com.amar.dto.SuggestionDto.SuggestionType.CATEGORY) {
+                        return Integer.compare(b.getCount(), a.getCount());
+                    }
+                    return 0;
+                }
+                return a.getType() == com.amar.dto.SuggestionDto.SuggestionType.CATEGORY ? -1 : 1;
+            })
+            .limit(8)
+            .collect(Collectors.toList());
+    }
+
+    /**
+     * Fallback suggestions using direct Elasticsearch calls when primary method fails
+     */
+    private List<com.amar.dto.SuggestionDto> getFallbackSuggestions(String query, int limit) {
+        List<com.amar.dto.SuggestionDto> fallbackSuggestions = new ArrayList<>();
+        
+        try {
+            if (StringUtils.hasText(query)) {
+                // Use a simpler Elasticsearch query for fallback
+                String escapedQuery = escapeJsonString(query.trim());
+                String fallbackQuery = String.format("""
+                    {
+                      "size": %d,
+                      "query": {
+                        "bool": {
+                          "should": [
+                            {"match_phrase_prefix": {"name": {"query": "%s", "boost": 3}}},
+                            {"match": {"brand": {"query": "%s", "boost": 2}}},
+                            {"match": {"categoryName": {"query": "%s", "boost": 1}}}
+                          ]
+                        }
+                      }
+                    }
+                    """, limit, escapedQuery, escapedQuery, escapedQuery);
+                
+                HttpHeaders headers = new HttpHeaders();
+                headers.set("Content-Type", "application/json");
+                HttpEntity<String> entity = new HttpEntity<>(fallbackQuery, headers);
+                
+                ResponseEntity<String> response = restTemplate.exchange(
+                    elasticsearchUrl + "/products/_search",
+                    HttpMethod.POST,
+                    entity,
+                    String.class
+                );
+                
+                // Parse simple fallback results
+                JsonNode responseJson = objectMapper.readTree(response.getBody());
+                JsonNode hits = responseJson.get("hits").get("hits");
+                
+                for (JsonNode hit : hits) {
+                    JsonNode source = hit.get("_source");
+                    String productName = source.get("name").asText();
+                    fallbackSuggestions.add(new com.amar.dto.SuggestionDto(
+                        productName, 
+                        com.amar.dto.SuggestionDto.SuggestionType.PRODUCT, 
+                        1));
+                }
+            }
+        } catch (Exception e) {
+            logger.error("Fallback suggestions also failed", e);
+            // If even fallback fails, return some basic suggestions
+            fallbackSuggestions.add(new com.amar.dto.SuggestionDto(
+                query + " (search)", 
+                com.amar.dto.SuggestionDto.SuggestionType.PRODUCT, 
+                0));
+        }
+        
+        return fallbackSuggestions;
     }
 }

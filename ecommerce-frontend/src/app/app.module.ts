@@ -46,6 +46,7 @@ import { HeaderComponent } from './shared/components/header/header.component';
 import { FooterComponent } from './shared/components/footer/footer.component';
 import { LoadingSpinnerComponent } from './shared/components/loading-spinner/loading-spinner.component';
 import { ErrorMessageComponent } from './shared/components/error-message/error-message.component';
+import { SearchAutocompleteComponent } from './shared/components/search-autocomplete/search-autocomplete.component';
 
 // Feature Modules
 import { HomeModule } from './features/home/home.module';
@@ -95,7 +96,8 @@ const MaterialModules = [
     HeaderComponent,
     FooterComponent,
     LoadingSpinnerComponent,
-    ErrorMessageComponent
+    ErrorMessageComponent,
+    SearchAutocompleteComponent
   ],
   imports: [
     BrowserModule,
