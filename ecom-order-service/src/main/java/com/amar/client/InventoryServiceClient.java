@@ -174,14 +174,16 @@ public class InventoryServiceClient {
         
         return circuitBreaker.run(() -> {
             try {
-                String url = inventoryServiceUrl + "/api/v1/inventory/commit/" + orderId;
+                String url = inventoryServiceUrl + "/api/v1/inventory/reserve/" + orderId + "/commit";
                 
-                Boolean committed = webClient.put()
+                Map<String, Object> response = webClient.post()
                         .uri(url)
                         .retrieve()
-                        .bodyToMono(Boolean.class)
+                        .bodyToMono(Map.class)
                         .timeout(Duration.ofSeconds(5))
                         .block();
+                
+                Boolean committed = response != null && (Boolean) response.getOrDefault("success", false);
                 
                 boolean success = committed != null ? committed : false;
                 logger.info("Stock commitment for order {}: {}", orderId, success ? "SUCCESS" : "FAILED");
@@ -210,14 +212,16 @@ public class InventoryServiceClient {
         
         return circuitBreaker.run(() -> {
             try {
-                String url = inventoryServiceUrl + "/api/v1/inventory/release-reservation/" + orderId;
+                String url = inventoryServiceUrl + "/api/v1/inventory/reserve/" + orderId + "/release";
                 
-                Boolean released = webClient.delete()
+                Map<String, Object> response = webClient.post()
                         .uri(url)
                         .retrieve()
-                        .bodyToMono(Boolean.class)
+                        .bodyToMono(Map.class)
                         .timeout(Duration.ofSeconds(5))
                         .block();
+                
+                Boolean released = response != null && (Boolean) response.getOrDefault("success", false);
                 
                 boolean success = released != null ? released : false;
                 logger.info("Stock reservation release for order {}: {}", orderId, success ? "SUCCESS" : "FAILED");

@@ -270,6 +270,33 @@ export class CheckoutComponent implements OnInit, OnDestroy {
     console.log('Form errors:', this.checkoutForm.errors);
     console.log('Current step:', this.currentStep);
     
+    // Validate user authentication before allowing checkout
+    const isAuthenticated = this.authService.isLoggedIn;
+    const hasValidUser = this.user && (
+      (this.user.username && this.user.username !== 'Unknown') || 
+      this.user.email
+    );
+    
+    console.log('🔍 Authentication check:', {
+      isAuthenticated,
+      hasUser: !!this.user,
+      username: this.user?.username,
+      email: this.user?.email,
+      hasValidUser
+    });
+    
+    if (!isAuthenticated || !hasValidUser) {
+      console.error('❌ Order placement blocked - User not authenticated');
+      console.error('Auth service logged in:', isAuthenticated);
+      console.error('User object:', this.user);
+      this.snackBar.open('Please log in to place an order', 'Close', { 
+        duration: 5000,
+        panelClass: ['error-snackbar']
+      });
+      this.router.navigate(['/login']);
+      return;
+    }
+
     if (!this.checkoutForm.valid || !this.cart || this.isProcessing) {
       console.log('❌ Order placement blocked - validation failed');
       return;
@@ -291,9 +318,22 @@ export class CheckoutComponent implements OnInit, OnDestroy {
     }));
 
     // Prepare create order request
+    // Use email as fallback if username is not available or is 'Unknown'
+    const userId = (this.user?.username && this.user.username !== 'Unknown') 
+                   ? this.user.username 
+                   : this.user?.email || '';
+    const cartKey = userId ? `cart:auth:${userId}` : `cart:anon:${this.cart.sessionId}`;
+    
+    console.log('🔍 Order request user ID:', { 
+      originalUsername: this.user?.username,
+      email: this.user?.email, 
+      resolvedUserId: userId,
+      cartKey 
+    });
+    
     const createOrderRequest: CreateOrderRequest = {
-      userId: this.user?.username || '',
-      cartId: this.cart.cartId,
+      userId: userId,
+      cartId: cartKey,
       items: orderItems,
       paymentMethod: formValue.paymentMethod,
       customerEmail: formValue.customerEmail,

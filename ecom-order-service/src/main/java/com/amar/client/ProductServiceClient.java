@@ -39,11 +39,12 @@ public class ProductServiceClient {
     // =====================================================
 
     public Optional<ProductDto> getProduct(Long productId) {
-        logger.debug("Retrieving product: {}", productId);
+        logger.info("🔍 [PRODUCT-RETRIEVAL] Starting product lookup - Product ID: {}", productId);
         
         return circuitBreaker.run(() -> {
             try {
                 String url = productServiceUrl + "/api/v1/products/catalog/" + productId;
+                logger.debug("🌐 [PRODUCT-RETRIEVAL] Making HTTP request to: {}", url);
                 
                 Map<String, Object> response = webClient.get()
                         .uri(url)
@@ -52,8 +53,12 @@ public class ProductServiceClient {
                         .timeout(Duration.ofSeconds(5))
                         .block();
                 
-                if (response != null && response.get("data") != null) {
-                    Map<String, Object> productData = (Map<String, Object>) response.get("data");
+                logger.debug("✅ [PRODUCT-RETRIEVAL] Received response from product service - Size: {}", 
+                           response != null ? response.size() : "null");
+                
+                if (response != null && response.get("id") != null) {
+                    // Product service returns product directly, not wrapped in "data"
+                    Map<String, Object> productData = response;
                     
                     ProductDto product = new ProductDto();
                     product.setId(((Number) productData.get("id")).longValue());
@@ -68,26 +73,29 @@ public class ProductServiceClient {
                         product.setPrice(BigDecimal.valueOf(((Number) priceObj).doubleValue()));
                     }
                     
-                    logger.debug("Retrieved product: {} - {}", productId, product.getName());
+                    logger.info("✅ [PRODUCT-RETRIEVAL] Successfully retrieved product - ID: {}, Name: '{}', SKU: '{}', Price: {}", 
+                              productId, product.getName(), product.getSku(), product.getPrice());
                     return Optional.of(product);
                 } else {
-                    logger.debug("Product not found: {}", productId);
+                    logger.warn("❌ [PRODUCT-RETRIEVAL] Product not found - ID: {}, Response keys: {}", 
+                              productId, response != null ? response.keySet() : "null");
                     return Optional.empty();
                 }
                 
             } catch (WebClientResponseException.NotFound e) {
-                logger.debug("Product not found: {}", productId);
+                logger.warn("❌ [PRODUCT-RETRIEVAL] Product not found (404) - ID: {}", productId);
                 return Optional.empty();
             } catch (WebClientResponseException e) {
-                logger.error("Error retrieving product: {} - Status: {}, Response: {}", 
+                logger.error("❌ [PRODUCT-RETRIEVAL] HTTP error retrieving product - ID: {}, Status: {}, Response: {}", 
                            productId, e.getStatusCode(), e.getResponseBodyAsString());
                 return Optional.empty();
             } catch (Exception e) {
-                logger.error("Unexpected error retrieving product: {}", productId, e);
+                logger.error("❌ [PRODUCT-RETRIEVAL] Unexpected error retrieving product - ID: {}", productId, e);
                 return Optional.empty();
             }
         }, throwable -> {
-            logger.warn("Circuit breaker fallback for product retrieval - product: {}", productId);
+            logger.error("⚡ [PRODUCT-RETRIEVAL] Circuit breaker activated for product - ID: {}, Error: {}", 
+                       productId, throwable.getMessage());
             return Optional.empty();
         });
     }
@@ -106,7 +114,7 @@ public class ProductServiceClient {
                         .timeout(Duration.ofSeconds(3))
                         .block();
                 
-                boolean available = response != null && response.get("data") != null;
+                boolean available = response != null && response.get("id") != null;
                 logger.debug("Product availability for {}: {}", productId, available);
                 return available;
                 

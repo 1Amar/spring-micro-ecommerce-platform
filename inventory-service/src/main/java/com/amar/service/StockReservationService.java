@@ -72,10 +72,14 @@ public class StockReservationService {
         Integer ttlMinutes = validateTtl(request.getExpirationMinutes());
         LocalDateTime expiresAt = LocalDateTime.now().plusMinutes(ttlMinutes);
 
-        // Check for existing reservation for this order
-        Optional<InventoryReservation> existingReservation = reservationRepository.findByOrderId(request.getOrderId());
-        if (existingReservation.isPresent()) {
-            throw new IllegalStateException("Reservation already exists for order ID: " + request.getOrderId());
+        // Check for existing reservations for this order
+        List<InventoryReservation> existingReservations = reservationRepository.findByOrderIdOrderByCreatedAtAsc(request.getOrderId());
+        if (!existingReservations.isEmpty()) {
+            logger.warn("Found {} existing reservations for order ID: {}, returning existing data", 
+                       existingReservations.size(), request.getOrderId());
+            
+            // Return existing reservations instead of creating new ones
+            return createResponseFromExistingReservations(existingReservations);
         }
 
         List<StockReservationResponse.ReservationItem> successfulReservations = new ArrayList<>();
@@ -191,13 +195,27 @@ public class StockReservationService {
             Optional<Inventory> inventoryOpt = inventoryRepository.findByProductIdWithLock(reservation.getProductId());
             if (inventoryOpt.isEmpty()) {
                 logger.error("Inventory not found for product ID: {} during commit", reservation.getProductId());
-                continue;
+                throw new IllegalStateException("Inventory not found for product ID: " + reservation.getProductId());
             }
 
             Inventory inventory = inventoryOpt.get();
             
+            // Validate that we have sufficient stock to commit
+            if (inventory.getQuantity() < reservation.getQuantityReserved()) {
+                logger.error("Insufficient stock to commit reservation for product ID: {} - Required: {}, Available: {}", 
+                           reservation.getProductId(), reservation.getQuantityReserved(), inventory.getQuantity());
+                throw new IllegalStateException("Insufficient stock to commit reservation for product ID: " + 
+                                              reservation.getProductId() + " - Required: " + reservation.getQuantityReserved() + 
+                                              ", Available: " + inventory.getQuantity());
+            }
+            
             // Remove from total quantity and reserved quantity
-            inventory.removeStock(reservation.getQuantityReserved());
+            boolean stockRemoved = inventory.removeStock(reservation.getQuantityReserved());
+            if (!stockRemoved) {
+                logger.error("Failed to remove stock for product ID: {} during commit", reservation.getProductId());
+                throw new IllegalStateException("Failed to remove stock for product ID: " + reservation.getProductId());
+            }
+            
             inventory.releaseReservedStock(reservation.getQuantityReserved());
             
             inventoryRepository.save(inventory);
@@ -489,5 +507,37 @@ public class StockReservationService {
         statistics.put("generatedAt", LocalDateTime.now());
         
         return statistics;
+    }
+
+    /**
+     * Create a response from existing reservations (when duplicate reservation is attempted)
+     */
+    private StockReservationResponse createResponseFromExistingReservations(List<InventoryReservation> existingReservations) {
+        List<StockReservationResponse.ReservationItem> reservationItems = new ArrayList<>();
+        
+        for (InventoryReservation reservation : existingReservations) {
+            if (!reservation.getIsExpired()) {
+                StockReservationResponse.ReservationItem item = new StockReservationResponse.ReservationItem(
+                    reservation.getProductId(),
+                    reservation.getQuantityReserved(),
+                    reservation.getQuantityReserved(),
+                    "ALREADY_RESERVED"
+                );
+                reservationItems.add(item);
+            }
+        }
+        
+        StockReservationResponse response = new StockReservationResponse();
+        response.setSuccess(true);
+        response.setOrderId(existingReservations.get(0).getOrderId());
+        response.setReservations(reservationItems);
+        response.setExpiresAt(existingReservations.get(0).getExpiresAt());
+        response.setMessage("Using existing reservations for this order");
+        response.setErrors(null);
+        response.setTotalItemsReserved(reservationItems.size());
+        response.setTotalQuantityReserved(reservationItems.stream().mapToInt(item -> item.getReservedQuantity()).sum());
+        response.setPartialReservation(false);
+        
+        return response;
     }
 }

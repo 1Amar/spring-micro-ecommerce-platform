@@ -181,6 +181,7 @@ public class PaymentServiceClient {
 
     public static class PaymentRequest {
         private UUID orderId;
+        private String userId;
         private BigDecimal amount;
         private String currency = "USD";
         private String paymentMethod;
@@ -215,6 +216,9 @@ public class PaymentServiceClient {
         // Getters and setters
         public UUID getOrderId() { return orderId; }
         public void setOrderId(UUID orderId) { this.orderId = orderId; }
+        
+        public String getUserId() { return userId; }
+        public void setUserId(String userId) { this.userId = userId; }
         
         public BigDecimal getAmount() { return amount; }
         public void setAmount(BigDecimal amount) { this.amount = amount; }

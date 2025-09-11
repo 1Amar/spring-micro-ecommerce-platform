@@ -7,6 +7,8 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import com.amar.dto.InventoryReservationDto;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -230,22 +232,48 @@ public class InventoryService {
         logger.info("Committing stock reservation for order ID: {}", orderId);
         
         // Get reservation details before committing (for event publishing)
-        // Note: This would require StockReservationService to provide reservation details
+        List<InventoryReservationDto> reservations = stockReservationService.getReservationsForOrder(orderId);
+        
+        // Commit the reservations
         stockReservationService.commitReservation(orderId);
         
-        // Publish commitment event - for now without specific product details
-        eventPublisher.publishReservationCommitted(orderId, null, null);
+        // Publish commitment events for each reservation with null safety
+        if (reservations != null && !reservations.isEmpty()) {
+            for (InventoryReservationDto reservation : reservations) {
+                if (reservation != null && reservation.getProductId() != null && reservation.getQuantityReserved() != null) {
+                    eventPublisher.publishReservationCommitted(orderId, reservation.getProductId(), reservation.getQuantityReserved());
+                } else {
+                    logger.warn("Skipping event publication for null reservation or null values - Order ID: {}, Reservation: {}", 
+                               orderId, reservation);
+                }
+            }
+        } else {
+            logger.warn("No reservations found for order ID: {} during commit event publication", orderId);
+        }
     }
 
     public void releaseReservation(UUID orderId) {
         logger.info("Releasing stock reservation for order ID: {}", orderId);
         
         // Get reservation details before releasing (for event publishing)
-        // Note: This would require StockReservationService to provide reservation details
+        List<InventoryReservationDto> reservations = stockReservationService.getReservationsForOrder(orderId);
+        
+        // Release the reservations
         stockReservationService.releaseReservation(orderId);
         
-        // Publish release event - for now without specific product details
-        eventPublisher.publishReservationReleased(orderId, null, null);
+        // Publish release events for each reservation with null safety
+        if (reservations != null && !reservations.isEmpty()) {
+            for (InventoryReservationDto reservation : reservations) {
+                if (reservation != null && reservation.getProductId() != null && reservation.getQuantityReserved() != null) {
+                    eventPublisher.publishReservationReleased(orderId, reservation.getProductId(), reservation.getQuantityReserved());
+                } else {
+                    logger.warn("Skipping event publication for null reservation or null values - Order ID: {}, Reservation: {}", 
+                               orderId, reservation);
+                }
+            }
+        } else {
+            logger.warn("No reservations found for order ID: {} during release event publication", orderId);
+        }
     }
 
     // =====================================================
@@ -461,12 +489,21 @@ public class InventoryService {
         InventoryDto dto = new InventoryDto();
         dto.setId(inventory.getId());
         dto.setProductId(inventory.getProductId());
-        dto.setQuantity(inventory.getQuantity());
-        dto.setReservedQuantity(inventory.getReservedQuantity());
-        dto.setAvailableQuantity(inventory.getAvailableQuantity());
-        dto.setReorderLevel(inventory.getReorderLevel());
-        dto.setMaxStockLevel(inventory.getMaxStockLevel());
-        dto.setStockStatus(inventory.getStockStatus());
+        dto.setQuantity(inventory.getQuantity() != null ? inventory.getQuantity() : 0);
+        dto.setReservedQuantity(inventory.getReservedQuantity() != null ? inventory.getReservedQuantity() : 0);
+        
+        // Handle computed availableQuantity - calculate if null
+        Integer availableQuantity = inventory.getAvailableQuantity();
+        if (availableQuantity == null) {
+            int quantity = inventory.getQuantity() != null ? inventory.getQuantity() : 0;
+            int reserved = inventory.getReservedQuantity() != null ? inventory.getReservedQuantity() : 0;
+            availableQuantity = Math.max(0, quantity - reserved);
+        }
+        dto.setAvailableQuantity(availableQuantity);
+        
+        dto.setReorderLevel(inventory.getReorderLevel() != null ? inventory.getReorderLevel() : 10);
+        dto.setMaxStockLevel(inventory.getMaxStockLevel() != null ? inventory.getMaxStockLevel() : 1000);
+        dto.setStockStatus(inventory.getStockStatus() != null ? inventory.getStockStatus() : "UNKNOWN");
         dto.setUpdatedAt(inventory.getUpdatedAt());
         return dto;
     }

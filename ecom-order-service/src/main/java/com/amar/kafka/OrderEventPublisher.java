@@ -1,5 +1,11 @@
 package com.amar.kafka;
 
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -8,11 +14,9 @@ import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.support.SendResult;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
+import com.amar.dto.OrderStatusUpdate;
+import com.amar.service.OrderWebSocketService;
+import com.amar.service.EventOutboxService;
 
 @Service
 public class OrderEventPublisher {
@@ -20,13 +24,19 @@ public class OrderEventPublisher {
     private static final Logger logger = LoggerFactory.getLogger(OrderEventPublisher.class);
 
     private final KafkaTemplate<String, Object> kafkaTemplate;
+    private final OrderWebSocketService webSocketService;
+    private final EventOutboxService eventOutboxService;
 
     @Value("${order.kafka.topics.order-events:order-events}")
     private String orderEventsTopic;
 
     @Autowired
-    public OrderEventPublisher(KafkaTemplate<String, Object> kafkaTemplate) {
+    public OrderEventPublisher(KafkaTemplate<String, Object> kafkaTemplate,
+                              OrderWebSocketService webSocketService,
+                              EventOutboxService eventOutboxService) {
         this.kafkaTemplate = kafkaTemplate;
+        this.webSocketService = webSocketService;
+        this.eventOutboxService = eventOutboxService;
     }
 
     // =====================================================
@@ -45,15 +55,17 @@ public class OrderEventPublisher {
                 "source", "ecom-order-service"
             );
             
-            CompletableFuture<SendResult<String, Object>> future = 
-                kafkaTemplate.send(orderEventsTopic, orderId.toString(), event);
+            // Use transactional outbox pattern for reliable event publishing
+            eventOutboxService.saveEvent(
+                orderId.toString(),
+                "Order",
+                eventType,
+                event,
+                orderEventsTopic,
+                orderId.toString()
+            );
             
-            future.thenAccept(result -> 
-                logger.debug("Successfully published order event: {} for order: {}", eventType, orderId))
-                .exceptionally(ex -> {
-                    logger.error("Failed to publish order event: {} for order: {}", eventType, orderId, ex);
-                    return null;
-                });
+            logger.debug("Order event saved to outbox: {} for order: {}", eventType, orderId);
                 
         } catch (Exception ex) {
             logger.error("Error publishing order event: {} for order: {}", eventType, orderId, ex);
@@ -81,6 +93,9 @@ public class OrderEventPublisher {
         );
         
         publishOrderEvent("order.updated", orderId, orderData);
+        
+        // Broadcast real-time WebSocket update
+        broadcastWebSocketUpdate(orderId, null, previousStatus, status, reason, "SYSTEM");
     }
 
     public void publishOrderConfirmed(UUID orderId, String confirmationNumber) {
@@ -90,6 +105,10 @@ public class OrderEventPublisher {
         );
         
         publishOrderEvent("order.confirmed", orderId, orderData);
+        
+        // Broadcast real-time WebSocket update
+        broadcastWebSocketUpdate(orderId, confirmationNumber, "PENDING", "CONFIRMED", 
+                                "Order confirmed with confirmation number: " + confirmationNumber, "SYSTEM");
     }
 
     public void publishOrderCancelled(UUID orderId, String reason, String cancelledBy) {
@@ -100,6 +119,9 @@ public class OrderEventPublisher {
         );
         
         publishOrderEvent("order.cancelled", orderId, orderData);
+        
+        // Broadcast real-time WebSocket update
+        broadcastWebSocketUpdate(orderId, null, null, "CANCELLED", reason, cancelledBy);
     }
 
     // =====================================================
@@ -188,5 +210,35 @@ public class OrderEventPublisher {
         
         public String getProductName() { return productName; }
         public void setProductName(String productName) { this.productName = productName; }
+    }
+
+    // =====================================================
+    // WebSocket Broadcasting Helper
+    // =====================================================
+
+    /**
+     * Broadcast order status updates via WebSocket in addition to Kafka
+     */
+    private void broadcastWebSocketUpdate(UUID orderId, String orderNumber, String previousStatus, 
+                                        String newStatus, String reason, String changedBy) {
+        try {
+            OrderStatusUpdate update = new OrderStatusUpdate();
+            update.setOrderId(orderId);
+            update.setOrderNumber(orderNumber);
+            update.setPreviousStatus(previousStatus);
+            update.setNewStatus(newStatus);
+            update.setReason(reason);
+            update.setChangedBy(changedBy);
+            
+            // Let WebSocketService handle the broadcasting
+            webSocketService.broadcastOrderStatusUpdate(update);
+            
+            logger.debug("Broadcasted WebSocket update for order: {} - Status: {} -> {}", 
+                        orderId, previousStatus, newStatus);
+                        
+        } catch (Exception e) {
+            logger.error("Failed to broadcast WebSocket update for order: {}", orderId, e);
+            // Don't let WebSocket failures affect Kafka publishing
+        }
     }
 }

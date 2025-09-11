@@ -1,8 +1,9 @@
-import { Injectable } from '@angular/core';
+import { Injectable, Optional } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, EMPTY } from 'rxjs';
 import { environment } from '@environments/environment';
 import { Order, CreateOrderRequest, OrderSummary, OrderStatus } from '@shared/models/order.model';
+import { StompWebSocketService } from './stomp-websocket.service';
 
 @Injectable({
   providedIn: 'root'
@@ -10,7 +11,10 @@ import { Order, CreateOrderRequest, OrderSummary, OrderStatus } from '@shared/mo
 export class OrderService {
   private readonly apiUrl = environment.apiUrl + environment.services.orderService;
 
-  constructor(private http: HttpClient) {}
+  constructor(
+    private http: HttpClient,
+    @Optional() private stompWebSocketService?: StompWebSocketService
+  ) {}
 
   // Order operations
   createOrder(request: CreateOrderRequest): Observable<Order> {
@@ -116,8 +120,70 @@ export class OrderService {
   }
 
   subscribeToOrderUpdates(orderId: string): Observable<any> {
-    // This could be implemented with WebSocket or Server-Sent Events
+    // Real-time WebSocket implementation with fallback
+    if (this.stompWebSocketService) {
+      return this.stompWebSocketService.subscribeToOrder(orderId);
+    }
+    // Fallback to HTTP polling or empty observable
+    console.warn('WebSocket service not available, falling back to HTTP');
     return this.http.get<any>(`${this.apiUrl}/${orderId}/updates`);
+  }
+
+  /**
+   * Subscribe to all order updates for the current user
+   */
+  subscribeToUserOrders(userId: string): Observable<any> {
+    if (this.stompWebSocketService) {
+      return this.stompWebSocketService.subscribeToUserOrders(userId);
+    }
+    return EMPTY;
+  }
+
+  /**
+   * Subscribe to order progress updates
+   */
+  subscribeToOrderProgress(orderId: string): Observable<any> {
+    if (this.stompWebSocketService) {
+      return this.stompWebSocketService.subscribeToOrderProgress(orderId);
+    }
+    return EMPTY;
+  }
+
+  /**
+   * Get WebSocket connection state
+   */
+  getWebSocketConnectionState(): Observable<any> {
+    if (this.stompWebSocketService) {
+      return this.stompWebSocketService.getConnectionState();
+    }
+    return EMPTY;
+  }
+
+  /**
+   * Manually refresh order status via WebSocket
+   */
+  refreshOrderStatus(orderId: string): void {
+    if (this.stompWebSocketService) {
+      this.stompWebSocketService.refreshOrderStatus(orderId);
+    }
+  }
+
+  /**
+   * Connect to WebSocket for real-time updates
+   */
+  connectToWebSocket(): void {
+    if (this.stompWebSocketService) {
+      this.stompWebSocketService.connect();
+    }
+  }
+
+  /**
+   * Disconnect from WebSocket
+   */
+  disconnectFromWebSocket(): void {
+    if (this.stompWebSocketService) {
+      this.stompWebSocketService.disconnect();
+    }
   }
 
   // Order analytics (for user dashboard)

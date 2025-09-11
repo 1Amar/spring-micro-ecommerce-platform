@@ -44,3 +44,6 @@ databaseChangeLog:
   - include:
       file: sql/015-create-order-service-schema.sql
       relativeToChangelogFile: true
+  - include:
+      file: sql/16-create-event-outbox-table.xml
+      relativeToChangelogFile: true

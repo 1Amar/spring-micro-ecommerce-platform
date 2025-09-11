@@ -93,11 +93,11 @@ public class PaymentEventListener {
                 logger.info("Payment {} initiated for order {} - amount: {}, method: {}", 
                            paymentId, orderId, amount, paymentMethod);
                 
-                // Update order status to indicate payment is being processed
+                // Update order status to indicate payment is being processed (with retry)
                 try {
-                    orderService.updateOrderPaymentStatus(orderId, "PAYMENT_INITIATED", paymentId);
+                    updateOrderPaymentStatusWithRetry(orderId, "PAYMENT_INITIATED", paymentId, 3);
                 } catch (Exception ex) {
-                    logger.error("Failed to update order payment status for order: {}", orderId, ex);
+                    logger.error("Failed to update order payment status for order: {} after retries", orderId, ex);
                     // Continue processing - this shouldn't fail the entire event
                 }
             }
@@ -127,9 +127,9 @@ public class PaymentEventListener {
                 logger.info("Payment {} completed for order {} - amount: {}, transaction: {}", 
                            paymentId, orderId, amount, transactionId);
                 
-                // Update order status to PAID and trigger fulfillment
+                // Update order status to PAID and trigger fulfillment (with retry)
                 try {
-                    orderService.updateOrderPaymentStatus(orderId, "PAYMENT_COMPLETED", paymentId);
+                    updateOrderPaymentStatusWithRetry(orderId, "PAYMENT_COMPLETED", paymentId, 3);
                     orderService.processPaymentCompletedOrder(orderId, paymentId, transactionId);
                 } catch (Exception ex) {
                     logger.error("Failed to process payment completion for order: {}", orderId, ex);
@@ -245,5 +245,43 @@ public class PaymentEventListener {
             logger.error("Failed to process payment cancelled event", ex);
             throw ex; // Re-throw to prevent acknowledgment
         }
+    }
+
+    /**
+     * Update order payment status with retry mechanism to handle race conditions
+     */
+    private void updateOrderPaymentStatusWithRetry(UUID orderId, String status, String paymentId, int maxRetries) {
+        int retryCount = 0;
+        long delay = 200; // Start with 200ms delay for better race condition handling
+        
+        while (retryCount < maxRetries) {
+            try {
+                orderService.updateOrderPaymentStatus(orderId, status, paymentId);
+                logger.debug("Successfully updated order {} payment status to {} on attempt {}", 
+                           orderId, status, retryCount + 1);
+                return; // Success!
+                
+            } catch (Exception ex) {
+                retryCount++;
+                
+                if (ex.getMessage() != null && ex.getMessage().contains("Order not found") && retryCount < maxRetries) {
+                    logger.warn("Order {} not found on attempt {}, retrying in {}ms", orderId, retryCount, delay);
+                    
+                    try {
+                        Thread.sleep(delay);
+                    } catch (InterruptedException ie) {
+                        Thread.currentThread().interrupt();
+                        throw new RuntimeException("Interrupted while retrying order update", ie);
+                    }
+                    
+                    delay *= 2; // Exponential backoff
+                } else {
+                    // Either max retries reached or different error
+                    throw ex;
+                }
+            }
+        }
+        
+        throw new RuntimeException("Failed to update order " + orderId + " payment status after " + maxRetries + " attempts");
     }
 }
