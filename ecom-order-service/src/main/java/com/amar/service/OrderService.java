@@ -17,6 +17,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
+
 import com.amar.client.CartServiceClient;
 import com.amar.client.CartServiceClient.CartValidationResponse;
 import com.amar.client.InventoryServiceClient;
@@ -55,6 +58,9 @@ public class OrderService {
     private final PaymentServiceClient paymentServiceClient;
     private final CartServiceClient cartServiceClient;
     private final ProductServiceClient productServiceClient;
+    
+    @PersistenceContext
+    private EntityManager entityManager;
 
     @Autowired
     public OrderService(OrderRepository orderRepository,
@@ -80,6 +86,18 @@ public class OrderService {
     @Transactional
     public OrderDto createOrder(CreateOrderRequest request) {
         logger.info("Creating order for user: {} with {} items", request.getUserId(), request.getItems().size());
+        
+        // Step 0: Validate user authentication - reject anonymous users
+        if (request.getUserId() == null || request.getUserId().trim().isEmpty() || 
+            "Unknown".equalsIgnoreCase(request.getUserId().trim()) || 
+            "null".equalsIgnoreCase(request.getUserId().trim())) {
+            
+            logger.error("Order creation rejected - Anonymous user checkout not allowed. UserId: {}", request.getUserId());
+            throw new IllegalArgumentException("Anonymous users cannot place orders. Please log in to continue.");
+        }
+        
+        logger.info("Order creation validated for authenticated user: {}", request.getUserId());
+        
         Order order = null;
         boolean inventoryReserved = false;
         boolean paymentProcessed = false;
@@ -187,16 +205,9 @@ public class OrderService {
             List<OrderItem> orderItems = createOrderItems(order, request.getItems());
             order.setItems(orderItems);
 
-            // Step 8: Clear or mark cart as ordered
+            // Step 8: Publish cart conversion event BEFORE clearing cart
             if (request.getCartId() != null && !request.getCartId().trim().isEmpty()) {
-                boolean cartCleared = cartServiceClient.clearCart(request.getCartId());
-                if (cartCleared) {
-                    logger.info("Cart cleared successfully after order: {}", request.getCartId());
-                } else {
-                    logger.warn("Failed to clear cart after order: {}", request.getCartId());
-                }
-                
-                // Step 8a: Publish cart conversion event
+                // Step 8a: Publish cart conversion event first (while cart still has items)
                 try {
                     String sessionId = extractSessionFromCartId(request.getCartId());
                     boolean eventPublished = cartServiceClient.publishCartConversionEvent(
@@ -217,6 +228,14 @@ public class OrderService {
                                order.getId(), request.getCartId(), ex);
                     // Don't fail the order creation if event publishing fails
                 }
+                
+                // Step 8b: Clear cart AFTER publishing conversion event
+                boolean cartCleared = cartServiceClient.clearCart(request.getCartId());
+                if (cartCleared) {
+                    logger.info("Cart cleared successfully after order: {}", request.getCartId());
+                } else {
+                    logger.warn("Failed to clear cart after order: {}", request.getCartId());
+                }
             }
 
             // Step 9: Create status history
@@ -224,8 +243,12 @@ public class OrderService {
             createStatusHistory(order, OrderStatus.PENDING.name(), OrderStatus.CONFIRMED.name(), 
                               "Order confirmed with successful payment", "SYSTEM");
 
-            // Step 10: Save updated order
+            // Step 10: Save updated order and flush to database
             order = orderRepository.save(order);
+            
+            // Step 10a: Flush to ensure order is committed before events are published
+            entityManager.flush();
+            logger.debug("Order flushed to database: {}", order.getId());
 
             // Step 11: Publish order events
             eventPublisher.publishOrderCreated(
@@ -468,6 +491,9 @@ public class OrderService {
             request.getPaymentMethod(), 
             request.getCustomerEmail()
         );
+        
+        // Set user ID for proper payment tracking
+        paymentRequest.setUserId(request.getUserId());
         
         // Set customer information
         paymentRequest.setCustomerName(request.getBillingFirstName() + " " + request.getBillingLastName());

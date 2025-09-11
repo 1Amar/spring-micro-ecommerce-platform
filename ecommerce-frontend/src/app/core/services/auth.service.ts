@@ -169,11 +169,28 @@ export class AuthService {
   private loadUserProfileSync(): void {
     try {
       const keycloakInstance = this.keycloakService.getKeycloakInstance();
+      const tokenParsed = keycloakInstance?.tokenParsed;
+      
+      // Try multiple username claims in order of preference
+      const username = tokenParsed?.['preferred_username'] || 
+                      tokenParsed?.['name'] || 
+                      tokenParsed?.['email'] || 
+                      tokenParsed?.['sub'] || 
+                      'Unknown';
+                      
+      console.log('🔍 Token claims debug:', {
+        preferred_username: tokenParsed?.['preferred_username'],
+        name: tokenParsed?.['name'], 
+        email: tokenParsed?.['email'],
+        sub: tokenParsed?.['sub'],
+        resolved_username: username
+      });
+      
       const profile: UserProfile = {
-        username: keycloakInstance?.tokenParsed?.['preferred_username'] || 'Unknown',
-        firstName: keycloakInstance?.tokenParsed?.['given_name'],
-        lastName: keycloakInstance?.tokenParsed?.['family_name'], 
-        email: keycloakInstance?.tokenParsed?.['email'],
+        username: username,
+        firstName: tokenParsed?.['given_name'],
+        lastName: tokenParsed?.['family_name'], 
+        email: tokenParsed?.['email'],
         roles: this.userRoles
       };
       this.userProfileSubject.next(profile);

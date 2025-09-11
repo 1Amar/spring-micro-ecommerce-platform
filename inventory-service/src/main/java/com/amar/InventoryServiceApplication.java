@@ -14,7 +14,7 @@ import org.springframework.transaction.annotation.EnableTransactionManagement;
 @SpringBootApplication(scanBasePackages = "com.amar")
 @EnableDiscoveryClient
 @EnableJpaRepositories(basePackages = "com.amar.repository")
-@EntityScan(basePackages = "com.amar.entity.inventory")
+@EntityScan(basePackages = {"com.amar.entity.inventory", "com.amar.entity"})
 @EnableCaching
 @EnableKafka
 @EnableAsync

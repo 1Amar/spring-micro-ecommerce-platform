@@ -49,16 +49,22 @@ public class PaymentService {
         payments.put(paymentId, payment);
         orderToPaymentMapping.put(orderId, paymentId);
 
-        // Publish payment initiated event
-        eventPublisher.publishPaymentInitiated(paymentId, orderId, amount, userId, paymentMethod);
-
         // Simulate payment processing
         payment.setStatus("PROCESSING");
         eventPublisher.publishPaymentProcessing(paymentId, orderId, amount, userId, "INTERNAL_GATEWAY");
 
         try {
-            // Simulate processing time
-            Thread.sleep(processingTimeMs);
+            // Wait a bit to allow order transaction to commit before publishing payment initiated event
+            Thread.sleep(200);
+            
+            // Publish payment initiated event after order has had time to commit
+            eventPublisher.publishPaymentInitiated(paymentId, orderId, amount, userId, paymentMethod);
+            
+            // Continue with remaining processing time
+            long remainingProcessingTime = Math.max(0, processingTimeMs - 200);
+            if (remainingProcessingTime > 0) {
+                Thread.sleep(remainingProcessingTime);
+            }
             
             // Simulate success/failure based on success rate
             boolean isSuccess = ThreadLocalRandom.current().nextDouble() < successRate;
@@ -137,8 +143,17 @@ public class PaymentService {
         payments.put(paymentId, payment);
         orderToPaymentMapping.put(orderId, paymentId);
 
-        eventPublisher.publishPaymentInitiated(paymentId, orderId, totalAmount, userId, defaultPaymentMethod);
-        logger.info("Payment initiated for order: {} - Payment ID: {}", orderId, paymentId);
+        // Delay the payment initiated event to allow order transaction to commit
+        new Thread(() -> {
+            try {
+                Thread.sleep(200); // Allow order transaction to commit
+                eventPublisher.publishPaymentInitiated(paymentId, orderId, totalAmount, userId, defaultPaymentMethod);
+                logger.info("Payment initiated for order: {} - Payment ID: {}", orderId, paymentId);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                logger.warn("Payment initiated event publish interrupted for order: {}", orderId);
+            }
+        }).start();
     }
 
     public void preparePaymentForCartConversion(String orderId, String userId, String cartId, BigDecimal totalAmount) {
@@ -159,8 +174,17 @@ public class PaymentService {
         payments.put(paymentId, payment);
         orderToPaymentMapping.put(orderId, paymentId);
 
-        eventPublisher.publishPaymentInitiated(paymentId, orderId, totalAmount, userId, "CREDIT_CARD");
-        logger.info("Payment prepared for cart conversion - Order: {}, Payment ID: {}", orderId, paymentId);
+        // Delay the payment initiated event to allow order transaction to commit
+        new Thread(() -> {
+            try {
+                Thread.sleep(200); // Allow order transaction to commit
+                eventPublisher.publishPaymentInitiated(paymentId, orderId, totalAmount, userId, "CREDIT_CARD");
+                logger.info("Payment prepared for cart conversion - Order: {}, Payment ID: {}", orderId, paymentId);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                logger.warn("Payment initiated event publish interrupted for cart conversion order: {}", orderId);
+            }
+        }).start();
     }
 
     public void preAuthorizePaymentForCheckout(String cartId, String userId, BigDecimal totalAmount) {

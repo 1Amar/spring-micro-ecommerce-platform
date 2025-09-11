@@ -49,6 +49,10 @@ const routes: Routes = [
     loadChildren: () => import('./features/elk-test/elk-test.module').then(m => m.ELKTestModule)
   },
   {
+    path: 'websocket-test',
+    loadChildren: () => import('./features/websocket-test/websocket-test.module').then(m => m.WebSocketTestModule)
+  },
+  {
     path: 'admin',
     loadChildren: () => import('./admin/admin.module').then(m => m.AdminModule),
     canActivate: [AuthGuard, AdminGuard]

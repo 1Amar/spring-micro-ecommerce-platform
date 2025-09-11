@@ -80,8 +80,8 @@ public class StockReservationController {
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
             response.put("message", "Reservation committed successfully");
-            response.put("orderId", orderId);
-            response.put("committedAt", LocalDateTime.now());
+            response.put("orderId", orderId != null ? orderId.toString() : null);
+            response.put("committedAt", LocalDateTime.now().toString());
 
             return ResponseEntity.ok(response);
 
@@ -96,7 +96,8 @@ public class StockReservationController {
             logger.error("Error committing reservation for order: {}", orderId, ex);
             Map<String, Object> errorResponse = new HashMap<>();
             errorResponse.put("success", false);
-            errorResponse.put("error", "Failed to commit reservation: " + ex.getMessage());
+            errorResponse.put("error", "Failed to commit reservation: " + (ex.getMessage() != null ? ex.getMessage() : "Unknown error"));
+            errorResponse.put("orderId", orderId != null ? orderId.toString() : null);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
         }
     }
