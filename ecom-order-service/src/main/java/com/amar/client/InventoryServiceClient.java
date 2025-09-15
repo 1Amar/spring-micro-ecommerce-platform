@@ -26,7 +26,7 @@ public class InventoryServiceClient {
     private final WebClient webClient;
     private final CircuitBreaker circuitBreaker;
 
-    @Value("${inventory.service.url:http://localhost:8084}")
+    @Value("${services.inventory.url:http://inventory-service}")
     private String inventoryServiceUrl;
 
     @Autowired

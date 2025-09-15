@@ -24,7 +24,7 @@ public class ProductServiceClient {
     private final WebClient webClient;
     private final CircuitBreaker circuitBreaker;
 
-    @Value("${product.service.url:http://localhost:8088}")
+    @Value("${services.product.url:http://product-service}")
     private String productServiceUrl;
 
     @Autowired

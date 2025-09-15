@@ -25,7 +25,7 @@ public class CartServiceClient {
     private final WebClient webClient;
     private final CircuitBreaker circuitBreaker;
 
-    @Value("${cart.service.url:http://localhost:8089}")
+    @Value("${services.cart.url:http://cart-service}")
     private String cartServiceUrl;
 
     @Autowired

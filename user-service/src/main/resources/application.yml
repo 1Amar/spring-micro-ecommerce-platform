@@ -7,9 +7,9 @@ spring:
   
   # Database Configuration
   datasource:
-    url: jdbc:postgresql://localhost:5432/microservices_ecom
-    username: ecom_user
-    password: ecom_pass
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/microservices_ecom}
+    username: ${DATABASE_USERNAME:ecom_user}
+    password: ${DATABASE_PASSWORD:ecom_pass}
     driver-class-name: org.postgresql.Driver
     hikari:
       connection-timeout: 20000
@@ -37,13 +37,13 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          issuer-uri: http://localhost:8080/realms/ecommerce-realm
+          issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8080/realms/ecommerce-realm}
 
 # Eureka Configuration
 eureka:
   client:
     service-url:
-      defaultZone: http://localhost:8761/eureka/
+      defaultZone: ${EUREKA_CLIENT_SERVICE_URL:http://localhost:8761/eureka/}
     fetch-registry: true
     register-with-eureka: true
   instance:
@@ -97,7 +97,7 @@ logging:
 otel:
   exporter:
     otlp:
-      endpoint: http://localhost:4318
+      endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:http://localhost:4318}
   resource:
     attributes:
       service.name: user-service

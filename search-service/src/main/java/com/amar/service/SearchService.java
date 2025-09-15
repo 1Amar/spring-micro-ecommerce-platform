@@ -13,6 +13,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpEntity;
@@ -40,7 +41,8 @@ public class SearchService {
 
     private final RestTemplate restTemplate = new RestTemplate();
     private final ObjectMapper objectMapper = new ObjectMapper();
-    private final String elasticsearchUrl = "http://localhost:9200";
+    @Value("${elasticsearch.url:http://localhost:9200}")
+    private String elasticsearchUrl;
 
     /**
      * Search products with basic text search functionality

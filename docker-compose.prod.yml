@@ -1,0 +1,442 @@
+version: '3.8'
+
+services:
+  # Production Infrastructure Services
+  postgres-master:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: microservices_ecom_prod
+      POSTGRES_USER: ecom_prod_user
+      POSTGRES_PASSWORD: CHANGE_ME_PRODUCTION_PASSWORD_2024
+      POSTGRES_REPLICATION_MODE: master
+      POSTGRES_REPLICATION_USER: replicator
+      POSTGRES_REPLICATION_PASSWORD: replication_password
+    volumes:
+      - postgres_prod_master_data:/var/lib/postgresql/data
+      - ./postgresql/prod.conf:/etc/postgresql/postgresql.conf
+    deploy:
+      placement:
+        constraints:
+          - node.role == manager
+      resources:
+        limits:
+          memory: 4G
+          cpus: '2'
+        reservations:
+          memory: 2G
+          cpus: '1'
+
+  postgres-slave:
+    image: postgres:15
+    environment:
+      POSTGRES_REPLICATION_MODE: slave
+      POSTGRES_REPLICATION_USER: replicator
+      POSTGRES_REPLICATION_PASSWORD: replication_password
+      POSTGRES_MASTER_HOST: postgres-master
+      POSTGRES_MASTER_PORT: 5432
+    depends_on:
+      - postgres-master
+    deploy:
+      replicas: 1
+      resources:
+        limits:
+          memory: 2G
+          cpus: '1'
+
+  redis-master:
+    image: redis:7-alpine
+    command: redis-server --requirepass CHANGE_ME_REDIS_PRODUCTION_PASSWORD --appendonly yes
+    volumes:
+      - redis_prod_master_data:/data
+    deploy:
+      placement:
+        constraints:
+          - node.role == manager
+      resources:
+        limits:
+          memory: 2G
+
+  redis-sentinel:
+    image: redis:7-alpine
+    command: redis-sentinel /usr/local/etc/redis/sentinel.conf
+    volumes:
+      - ./redis/sentinel.conf:/usr/local/etc/redis/sentinel.conf
+    depends_on:
+      - redis-master
+    deploy:
+      replicas: 3
+
+  zookeeper-1:
+    image: confluentinc/cp-zookeeper:latest
+    environment:
+      ZOOKEEPER_SERVER_ID: 1
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+      ZOOKEEPER_SERVERS: zookeeper-1:2888:3888;zookeeper-2:2888:3888;zookeeper-3:2888:3888
+    volumes:
+      - zookeeper_1_data:/var/lib/zookeeper/data
+      - zookeeper_1_logs:/var/lib/zookeeper/log
+    deploy:
+      placement:
+        constraints:
+          - node.labels.kafka == node1
+
+  zookeeper-2:
+    image: confluentinc/cp-zookeeper:latest
+    environment:
+      ZOOKEEPER_SERVER_ID: 2
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+      ZOOKEEPER_SERVERS: zookeeper-1:2888:3888;zookeeper-2:2888:3888;zookeeper-3:2888:3888
+    volumes:
+      - zookeeper_2_data:/var/lib/zookeeper/data
+      - zookeeper_2_logs:/var/lib/zookeeper/log
+    deploy:
+      placement:
+        constraints:
+          - node.labels.kafka == node2
+
+  zookeeper-3:
+    image: confluentinc/cp-zookeeper:latest
+    environment:
+      ZOOKEEPER_SERVER_ID: 3
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+      ZOOKEEPER_SERVERS: zookeeper-1:2888:3888;zookeeper-2:2888:3888;zookeeper-3:2888:3888
+    volumes:
+      - zookeeper_3_data:/var/lib/zookeeper/data
+      - zookeeper_3_logs:/var/lib/zookeeper/log
+    deploy:
+      placement:
+        constraints:
+          - node.labels.kafka == node3
+
+  kafka-1:
+    image: confluentinc/cp-kafka:latest
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper-1:2181,zookeeper-2:2181,zookeeper-3:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka-1:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 2
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 3
+    depends_on:
+      - zookeeper-1
+      - zookeeper-2
+      - zookeeper-3
+    volumes:
+      - kafka_1_data:/var/lib/kafka/data
+    deploy:
+      placement:
+        constraints:
+          - node.labels.kafka == node1
+
+  kafka-2:
+    image: confluentinc/cp-kafka:latest
+    environment:
+      KAFKA_BROKER_ID: 2
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper-1:2181,zookeeper-2:2181,zookeeper-3:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka-2:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 2
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 3
+    depends_on:
+      - zookeeper-1
+      - zookeeper-2
+      - zookeeper-3
+    volumes:
+      - kafka_2_data:/var/lib/kafka/data
+    deploy:
+      placement:
+        constraints:
+          - node.labels.kafka == node2
+
+  kafka-3:
+    image: confluentinc/cp-kafka:latest
+    environment:
+      KAFKA_BROKER_ID: 3
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper-1:2181,zookeeper-2:2181,zookeeper-3:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka-3:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 2
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 3
+    depends_on:
+      - zookeeper-1
+      - zookeeper-2
+      - zookeeper-3
+    volumes:
+      - kafka_3_data:/var/lib/kafka/data
+    deploy:
+      placement:
+        constraints:
+          - node.labels.kafka == node3
+
+  elasticsearch-1:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.8.0
+    environment:
+      - node.name=elasticsearch-1
+      - cluster.name=ecommerce-cluster
+      - discovery.seed_hosts=elasticsearch-2,elasticsearch-3
+      - cluster.initial_master_nodes=elasticsearch-1,elasticsearch-2,elasticsearch-3
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms2g -Xmx2g"
+    volumes:
+      - elasticsearch_1_data:/usr/share/elasticsearch/data
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+
+  elasticsearch-2:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.8.0
+    environment:
+      - node.name=elasticsearch-2
+      - cluster.name=ecommerce-cluster
+      - discovery.seed_hosts=elasticsearch-1,elasticsearch-3
+      - cluster.initial_master_nodes=elasticsearch-1,elasticsearch-2,elasticsearch-3
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms2g -Xmx2g"
+    volumes:
+      - elasticsearch_2_data:/usr/share/elasticsearch/data
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+
+  elasticsearch-3:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.8.0
+    environment:
+      - node.name=elasticsearch-3
+      - cluster.name=ecommerce-cluster
+      - discovery.seed_hosts=elasticsearch-1,elasticsearch-2
+      - cluster.initial_master_nodes=elasticsearch-1,elasticsearch-2,elasticsearch-3
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms2g -Xmx2g"
+    volumes:
+      - elasticsearch_3_data:/usr/share/elasticsearch/data
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+
+  # Production Load Balancer
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/prod.conf:/etc/nginx/nginx.conf
+      - ./ssl/prod:/etc/nginx/ssl
+    depends_on:
+      - api-gateway
+    deploy:
+      replicas: 2
+      update_config:
+        parallelism: 1
+        delay: 10s
+
+  # Monitoring
+  prometheus:
+    image: prom/prometheus:latest
+    volumes:
+      - ./prometheus/prod.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=30d'
+      - '--web.enable-lifecycle'
+
+  grafana:
+    image: grafana/grafana:latest
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=CHANGE_ME_GRAFANA_PASSWORD
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/dashboards:/etc/grafana/provisioning/dashboards
+      - ./grafana/datasources:/etc/grafana/provisioning/datasources
+
+  # Microservices (Production Ready)
+  eureka-server:
+    build: ./eureka-server
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+    deploy:
+      replicas: 2
+      resources:
+        limits:
+          memory: 1G
+        reservations:
+          memory: 512M
+
+  api-gateway:
+    build: ./ecom-api-gateway
+    depends_on:
+      - eureka-server
+    env_file:
+      - ./environments/prod.env
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+    deploy:
+      replicas: 3
+      update_config:
+        parallelism: 1
+        delay: 30s
+      resources:
+        limits:
+          memory: 1G
+        reservations:
+          memory: 512M
+
+  user-service:
+    build: ./user-service
+    depends_on:
+      - postgres-master
+      - eureka-server
+    env_file:
+      - ./environments/prod.env
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+    deploy:
+      replicas: 3
+      resources:
+        limits:
+          memory: 1G
+        reservations:
+          memory: 512M
+
+  order-service:
+    build: ./ecom-order-service
+    depends_on:
+      - postgres-master
+      - eureka-server
+      - kafka-1
+      - kafka-2
+      - kafka-3
+    env_file:
+      - ./environments/prod.env
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+    deploy:
+      replicas: 3
+      resources:
+        limits:
+          memory: 1G
+        reservations:
+          memory: 512M
+
+  inventory-service:
+    build: ./inventory-service
+    depends_on:
+      - postgres-master
+      - redis-master
+      - eureka-server
+      - kafka-1
+      - kafka-2
+      - kafka-3
+    env_file:
+      - ./environments/prod.env
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+    deploy:
+      replicas: 3
+      resources:
+        limits:
+          memory: 1G
+        reservations:
+          memory: 512M
+
+  search-service:
+    build: ./search-service
+    depends_on:
+      - elasticsearch-1
+      - elasticsearch-2
+      - elasticsearch-3
+      - eureka-server
+    env_file:
+      - ./environments/prod.env
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+    deploy:
+      replicas: 2
+      resources:
+        limits:
+          memory: 1G
+        reservations:
+          memory: 512M
+
+  payment-service:
+    build: ./payment-service
+    depends_on:
+      - eureka-server
+    env_file:
+      - ./environments/prod.env
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+    deploy:
+      replicas: 3
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
+
+  product-service:
+    build: ./product-service
+    depends_on:
+      - postgres-master
+      - eureka-server
+    env_file:
+      - ./environments/prod.env
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+    deploy:
+      replicas: 3
+      resources:
+        limits:
+          memory: 1G
+        reservations:
+          memory: 512M
+
+  cart-service:
+    build: ./cart-service
+    depends_on:
+      - redis-master
+      - eureka-server
+    env_file:
+      - ./environments/prod.env
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+    deploy:
+      replicas: 3
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
+
+volumes:
+  postgres_prod_master_data:
+  redis_prod_master_data:
+  zookeeper_1_data:
+  zookeeper_1_logs:
+  zookeeper_2_data:
+  zookeeper_2_logs:
+  zookeeper_3_data:
+  zookeeper_3_logs:
+  kafka_1_data:
+  kafka_2_data:
+  kafka_3_data:
+  elasticsearch_1_data:
+  elasticsearch_2_data:
+  elasticsearch_3_data:
+  prometheus_data:
+  grafana_data:
+
+networks:
+  default:
+    driver: overlay
+    attachable: true

@@ -28,6 +28,9 @@ public class InventoryServiceClient {
     private final WebClient webClient;
     private final ObjectMapper objectMapper;
     
+    @Value("${services.inventory.url:http://inventory-service}")
+    private String inventoryServiceUrl;
+    
     @Value("${app.services.inventory.timeout:5000}")
     private int timeoutMs;
 
@@ -45,7 +48,7 @@ public class InventoryServiceClient {
         
         try {
             String response = webClient.get()
-                .uri("http://localhost:8084/api/v1/inventory/availability/{productId}?quantity={quantity}", 
+                .uri(inventoryServiceUrl + "/api/v1/inventory/availability/{productId}?quantity={quantity}", 
                      productId, quantity)
                 .retrieve()
                 .bodyToMono(String.class)
@@ -80,7 +83,7 @@ public class InventoryServiceClient {
             request.put("userId", userId);
             
             String response = webClient.post()
-                .uri("http://localhost:8084/api/v1/inventory/reserve")
+                .uri(inventoryServiceUrl + "/api/v1/inventory/reserve")
                 .bodyValue(request)
                 .retrieve()
                 .bodyToMono(String.class)
@@ -103,7 +106,7 @@ public class InventoryServiceClient {
         
         try {
             String response = webClient.post()
-                .uri("http://localhost:8084/api/v1/inventory/reserve/{orderId}/release", orderId)
+                .uri(inventoryServiceUrl + "/api/v1/inventory/reserve/{orderId}/release", orderId)
                 .retrieve()
                 .bodyToMono(String.class)
                 .timeout(Duration.ofMillis(timeoutMs))
@@ -125,7 +128,7 @@ public class InventoryServiceClient {
         
         try {
             String response = webClient.get()
-                .uri("http://localhost:8084/api/v1/inventory/product/{productId}", productId)
+                .uri(inventoryServiceUrl + "/api/v1/inventory/product/{productId}", productId)
                 .retrieve()
                 .bodyToMono(String.class)
                 .timeout(Duration.ofMillis(timeoutMs))

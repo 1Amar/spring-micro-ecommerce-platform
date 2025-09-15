@@ -7,8 +7,8 @@ spring:
   
   data:
     redis:
-      host: localhost
-      port: 6379
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
       database: 1
       timeout: 2000ms
       lettuce:
@@ -20,7 +20,7 @@ spring:
 
   # Kafka Configuration
   kafka:
-    bootstrap-servers: localhost:9092
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
@@ -40,13 +40,15 @@ spring:
 
   cloud:
     loadbalancer:
+      cache:
+        enabled: false
       ribbon:
         enabled: false
 
 eureka:
   client:
     service-url:
-      defaultZone: http://localhost:8761/eureka/
+      defaultZone: ${EUREKA_CLIENT_SERVICE_URL:http://localhost:8761/eureka/}
     fetch-registry: true
     register-with-eureka: true
   instance:
@@ -54,9 +56,24 @@ eureka:
     lease-renewal-interval-in-seconds: 30
     instance-id: ${spring.application.name}:${spring.application.instance_id:${random.value}}
 
-# Product Service Integration
-product-service:
-  url: http://product-service
+# Service Integration
+services:
+  product:
+    url: ${PRODUCT_SERVICE_URL:http://product-service}
+  inventory:
+    url: ${INVENTORY_SERVICE_URL:http://inventory-service}
+
+# Application Configuration
+app:
+  services:
+    inventory:
+      timeout: ${INVENTORY_SERVICE_TIMEOUT:5000}
+
+# Cart Kafka Configuration
+cart:
+  kafka:
+    topics:
+      cart-events: ${CART_KAFKA_TOPIC:cart-events}
 
 # Observability
 management:
@@ -75,7 +92,7 @@ management:
 otel:
   exporter:
     otlp:
-      endpoint: http://localhost:4318
+      endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:http://localhost:4318}
   service:
     name: cart-service
     version: 1.0.0

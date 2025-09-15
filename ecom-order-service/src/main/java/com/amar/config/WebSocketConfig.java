@@ -1,5 +1,6 @@
 package com.amar.config;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
 import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
@@ -13,6 +14,9 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
 @Configuration
 @EnableWebSocketMessageBroker
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
+
+    @Value("${websocket.allowed-origins}")
+    private String allowedOrigins;
 
     /**
      * Configure message broker for handling subscription destinations
@@ -38,12 +42,14 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         // Main WebSocket endpoint
+        String[] origins = allowedOrigins.split(",");
+        
         registry.addEndpoint("/ws/orders")
-                .setAllowedOriginPatterns("http://localhost:4200", "http://localhost:3000") // Angular frontend
+                .setAllowedOriginPatterns(origins) // Angular frontend
                 .withSockJS(); // Enable SockJS fallback
         
         // Alternative endpoint without SockJS for native WebSocket clients
         registry.addEndpoint("/ws/orders-native")
-                .setAllowedOriginPatterns("http://localhost:4200", "http://localhost:3000");
+                .setAllowedOriginPatterns(origins);
     }
 }
