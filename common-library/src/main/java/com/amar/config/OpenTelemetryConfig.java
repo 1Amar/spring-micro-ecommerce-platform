@@ -20,6 +20,9 @@ public class OpenTelemetryConfig {
 
     @Value("${spring.application.name:unknown-service}")
     private String serviceName;
+    
+    @Value("${otel.exporter.otlp.endpoint:http://localhost:4317}")
+    private String otlpEndpoint;
 
     @Bean
     public OpenTelemetry openTelemetry() {
@@ -33,7 +36,7 @@ public class OpenTelemetryConfig {
         SdkTracerProvider tracerProvider = SdkTracerProvider.builder()
             .addSpanProcessor(BatchSpanProcessor.builder(
                 OtlpGrpcSpanExporter.builder()
-                    .setEndpoint("http://localhost:4317")
+                    .setEndpoint(otlpEndpoint)
                     .build())
                 .build())
             .setResource(resource)

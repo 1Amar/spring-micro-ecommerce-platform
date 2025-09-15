@@ -8,6 +8,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -29,6 +30,9 @@ public class ProductIndexService {
 
     @Autowired
     private ProductSearchRepository searchRepository;
+    
+    @Value("${services.product.url:http://product-service}")
+    private String productServiceUrl;
 
     @Autowired
     private RestTemplate restTemplate;
@@ -137,7 +141,7 @@ public class ProductIndexService {
                                page, BATCH_SIZE, correlationId);
 
                     // Fetch products from Product Service
-                    String url = "http://product-service/api/v1/products/catalog?page={page}&size={size}&sortBy=id&sortDir=asc";
+                    String url = productServiceUrl + "/api/v1/products/catalog?page={page}&size={size}&sortBy=id&sortDir=asc";
                     
                     ResponseEntity<RestPageImpl<ProductDto>> response = restTemplate.exchange(
                         url,
@@ -230,7 +234,7 @@ public class ProductIndexService {
                        productId, correlationId);
 
             // Fetch product from Product Service
-            String url = "http://product-service/api/v1/products/catalog/{id}";
+            String url = productServiceUrl + "/api/v1/products/catalog/{id}";
             ResponseEntity<ProductDto> response = restTemplate.getForEntity(url, ProductDto.class, productId);
             
             if (response.getBody() != null) {

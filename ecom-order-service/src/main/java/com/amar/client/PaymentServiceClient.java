@@ -24,7 +24,7 @@ public class PaymentServiceClient {
     private final WebClient webClient;
     private final CircuitBreaker circuitBreaker;
 
-    @Value("${payment.service.url:http://localhost:8087}")
+    @Value("${services.payment.url:http://payment-service}")
     private String paymentServiceUrl;
 
     @Autowired

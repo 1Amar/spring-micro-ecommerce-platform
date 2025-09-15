@@ -1,5 +1,6 @@
 package com.amar.config;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.cors.CorsConfiguration;
@@ -12,18 +13,16 @@ import java.util.List;
 @Configuration
 public class ReactiveCorsConfig {
 
+    @Value("${cors.allowed-origins}")
+    private String allowedOrigins;
+
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         
         // Proper CORS configuration for production
         configuration.setAllowCredentials(true);
-        configuration.setAllowedOriginPatterns(List.of(
-            "http://localhost:4200",      // Angular frontend
-            "http://localhost:8080",      // Keycloak
-            "http://127.0.0.1:4200",
-            "http://127.0.0.1:8080"
-        ));
+        configuration.setAllowedOriginPatterns(Arrays.asList(allowedOrigins.split(",")));
         
         // Allow necessary headers
         configuration.setAllowedHeaders(List.of(

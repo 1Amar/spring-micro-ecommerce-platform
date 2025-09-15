@@ -6,6 +6,8 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
@@ -18,14 +20,21 @@ public class ProductValidationService {
     
     private static final Logger log = LoggerFactory.getLogger(ProductValidationService.class);
     
-    @Autowired
-    private WebClient webClient;
+    private final WebClient webClient;
+    
+    @Value("${services.product.url:http://product-service}")
+    private String productServiceUrl;
     
     // Cache for product validation (1 minute TTL)
     private final Cache<Long, ProductDto> productCache = Caffeine.newBuilder()
         .maximumSize(10000)
         .expireAfterWrite(1, TimeUnit.MINUTES)
         .build();
+    
+    @Autowired
+    public ProductValidationService(WebClient webClient) {
+        this.webClient = webClient;
+    }
     
     public ProductDto validateProduct(Long productId) {
         if (productId == null) {
@@ -45,7 +54,7 @@ public class ProductValidationService {
             
             ProductDto product = webClient
                 .get()
-                .uri("http://localhost:8088/api/v1/products/catalog/{id}", productId)
+                .uri(productServiceUrl + "/api/v1/products/catalog/{id}", productId)
                 .retrieve()
                 .bodyToMono(ProductDto.class)
                 .timeout(Duration.ofSeconds(30))
@@ -73,6 +82,7 @@ public class ProductValidationService {
         productCache.invalidateAll();
         log.info("Product cache cleared");
     }
+    
     
     public long getCacheSize() {
         return productCache.estimatedSize();

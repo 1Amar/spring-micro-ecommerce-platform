@@ -4,17 +4,22 @@ spring:
   profiles:
     include: observability
   elasticsearch:
-    uris: http://localhost:9200
-    connection-timeout: 30s
-    socket-timeout: 30s
+    uris: ${ELASTICSEARCH_URIS:http://localhost:9200}
+    connection-timeout: ${ELASTICSEARCH_CONNECTION_TIMEOUT:30s}
+    socket-timeout: ${ELASTICSEARCH_SOCKET_TIMEOUT:30s}
 
 server:
   port: 8086
 
+# Service Integration
+services:
+  product:
+    url: ${PRODUCT_SERVICE_URL:http://product-service}
+
 eureka:
   client:
     service-url:
-      defaultZone: http://localhost:8761/eureka/
+      defaultZone: ${EUREKA_CLIENT_SERVICE_URL:http://localhost:8761/eureka/}
     register-with-eureka: true
     fetch-registry: true
   instance:

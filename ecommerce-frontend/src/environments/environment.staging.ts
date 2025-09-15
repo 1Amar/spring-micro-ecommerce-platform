@@ -1,8 +1,8 @@
 export const environment = {
-  production: true,
-  apiUrl: 'https://api.company.com/api/v1', // Production API Gateway URL
+  production: false,
+  apiUrl: 'https://staging-api.company.com/api/v1', // Staging API Gateway URL
   keycloak: {
-    url: 'https://auth.company.com',
+    url: 'http://staging-keycloak:8080',
     realm: 'ecommerce-realm',
     clientId: 'ecommerce-frontend'
   },
@@ -18,7 +18,7 @@ export const environment = {
     searchService: '/search'
   },
   logging: {
-    level: 'error',
-    enableConsoleLogging: false
+    level: 'info',
+    enableConsoleLogging: true
   }
 };

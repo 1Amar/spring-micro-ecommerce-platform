@@ -5,15 +5,15 @@ spring:
     include: observability
   data:
     redis:
-      host: localhost
-      port: 6379
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
       timeout: 2000ms
   security:
     oauth2:
       resourceserver:
         jwt:
-          issuer-uri: http://localhost:8080/realms/ecommerce-realm
-          jwk-set-uri: http://localhost:8080/realms/ecommerce-realm/protocol/openid-connect/certs
+          issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8080/realms/ecommerce-realm}
+          jwk-set-uri: ${KEYCLOAK_JWK_SET_URI:http://localhost:8080/realms/ecommerce-realm/protocol/openid-connect/certs}
   cloud:
     gateway:
       routes:
@@ -97,7 +97,7 @@ server:
 eureka:
   client:
     service-url:
-      defaultZone: http://localhost:8761/eureka/
+      defaultZone: ${EUREKA_CLIENT_SERVICE_URL:http://localhost:8761/eureka/}
     register-with-eureka: true
     fetch-registry: true
   instance:
@@ -136,7 +136,7 @@ management:
 otel:
   exporter:
     otlp:
-      endpoint: http://localhost:4318
+      endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:http://localhost:4318}
       protocol: http/protobuf
   traces:
     exporter: otlp
@@ -158,5 +158,9 @@ logging:
     org.springframework.cloud.gateway.handler: INFO
     org.springframework.web.server: INFO
     reactor.netty.http: INFO
+
+# CORS Configuration
+cors:
+  allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:4200,http://localhost:8080,http://127.0.0.1:4200,http://127.0.0.1:8080}
 
 # Circuit Breaker Configuration REMOVED - was causing 403 FORBIDDEN issues

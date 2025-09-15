@@ -10,9 +10,9 @@ spring:
   
   # Database Configuration
   datasource:
-    url: jdbc:postgresql://localhost:5432/microservices_ecom
-    username: ecom_user
-    password: ecom_pass
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/microservices_ecom}
+    username: ${DATABASE_USERNAME:ecom_user}
+    password: ${DATABASE_PASSWORD:ecom_pass}
     driver-class-name: org.postgresql.Driver
     hikari:
       connection-timeout: 20000
@@ -40,8 +40,8 @@ spring:
   # Redis Configuration
   data:
     redis:
-      host: localhost
-      port: 6379
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
       timeout: 2000
       database: 2  # Use different database than cart service
       jedis:
@@ -59,7 +59,7 @@ spring:
 
   # Kafka Configuration
   kafka:
-    bootstrap-servers: localhost:9092
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
@@ -80,7 +80,7 @@ spring:
 eureka:
   client:
     service-url:
-      defaultZone: http://localhost:8761/eureka/
+      defaultZone: ${EUREKA_CLIENT_SERVICE_URL:http://localhost:8761/eureka/}
     register-with-eureka: true
     fetch-registry: true
     registry-fetch-interval-seconds: 30
@@ -120,7 +120,7 @@ otel:
     name: ${spring.application.name}
   exporter:
     otlp:
-      endpoint: http://localhost:4318
+      endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:http://localhost:4318}
   metric:
     export:
       interval: 10s
@@ -170,9 +170,14 @@ inventory:
     reservation-cleanup-cron: "0 */5 * * * *"  # Every 5 minutes
     low-stock-check-cron: "0 */30 * * * *"    # Every 30 minutes
   
-  # External service URLs
+  # External service URLs (DEPRECATED - use services.product.url)
   services:
-    product-service-url: http://localhost:8088
+    product-service-url: ${PRODUCT_SERVICE_URL:http://product-service}
+
+# Service Integration
+services:
+  product:
+    url: ${PRODUCT_SERVICE_URL:http://product-service}
 
 # Logging Configuration
 logging:

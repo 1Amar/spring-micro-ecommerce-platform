@@ -1,4 +1,4 @@
-package com.amar.cart.config;
+package com.amar.config;
 
 import org.springframework.cloud.client.loadbalancer.LoadBalanced;
 import org.springframework.context.annotation.Bean;
@@ -12,10 +12,5 @@ public class WebClientConfig {
     @LoadBalanced
     public WebClient.Builder webClientBuilder() {
         return WebClient.builder();
-    }
-    
-    @Bean
-    public WebClient webClient(WebClient.Builder builder) {
-        return builder.build();
     }
 }

@@ -24,7 +24,7 @@ public class ProductValidationService {
     private final Map<Long, Boolean> productExistenceCache = new ConcurrentHashMap<>();
     private final Map<Long, Map<String, Object>> productDetailsCache = new ConcurrentHashMap<>();
 
-    @Value("${inventory.services.product-service-url:http://localhost:8088}")
+    @Value("${services.product.url:http://product-service}")
     private String productServiceBaseUrl;
 
     @Value("${inventory.product-validation.timeout-seconds:5}")

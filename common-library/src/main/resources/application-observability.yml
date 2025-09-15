@@ -45,16 +45,16 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          issuer-uri: http://localhost:8080/realms/ecommerce-realm
-          jwk-set-uri: http://localhost:8080/realms/ecommerce-realm/protocol/openid-connect/certs
+          issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8080/realms/ecommerce-realm}
+          jwk-set-uri: ${KEYCLOAK_JWK_SET_URI:http://localhost:8080/realms/ecommerce-realm/protocol/openid-connect/certs}
 
 # Keycloak Configuration
 keycloak:
-  auth-server-url: http://localhost:8080
+  auth-server-url: ${KEYCLOAK_AUTH_SERVER_URL:http://localhost:8080}
   realm: ecommerce-realm
   resource: ecommerce-backend
   credentials:
-    secret: backend-secret-key
+    secret: ${KEYCLOAK_CLIENT_SECRET:backend-secret-key}
   use-resource-role-mappings: true
   # CORS handled by API Gateway - disable service-level CORS
   cors: false
