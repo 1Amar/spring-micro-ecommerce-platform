@@ -28,11 +28,23 @@ spring:
           uri: lb://inventory-service
           predicates:
             - Path=/api/v1/inventory/**
+          filters:
+            - name: RequestRateLimiter
+              args:
+                key-resolver: "#{@userOrIpKeyResolver}"
+                redis-rate-limiter.replenishRate: ${RATE_LIMIT_INVENTORY_REPLENISH:15}
+                redis-rate-limiter.burstCapacity: ${RATE_LIMIT_INVENTORY_BURST:30}
             
         - id: product-service
           uri: lb://product-service
           predicates:
             - Path=/api/v1/products/**
+          filters:
+            - name: RequestRateLimiter
+              args:
+                key-resolver: "#{@userOrIpKeyResolver}"
+                redis-rate-limiter.replenishRate: ${RATE_LIMIT_PRODUCT_REPLENISH:20}
+                redis-rate-limiter.burstCapacity: ${RATE_LIMIT_PRODUCT_BURST:40}
             
         - id: categories-service
           uri: lb://product-service
@@ -63,16 +75,34 @@ spring:
           uri: lb://user-service
           predicates:
             - Path=/api/v1/users/**
+          filters:
+            - name: RequestRateLimiter
+              args:
+                key-resolver: "#{@userOrIpKeyResolver}"
+                redis-rate-limiter.replenishRate: ${RATE_LIMIT_USER_REPLENISH:10}
+                redis-rate-limiter.burstCapacity: ${RATE_LIMIT_USER_BURST:20}
             
         - id: cart-service
           uri: lb://cart-service
           predicates:
             - Path=/api/v1/cart/**
+          filters:
+            - name: RequestRateLimiter
+              args:
+                key-resolver: "#{@userOrIpKeyResolver}"
+                redis-rate-limiter.replenishRate: ${RATE_LIMIT_CART_REPLENISH:25}
+                redis-rate-limiter.burstCapacity: ${RATE_LIMIT_CART_BURST:50}
             
         - id: search-service
           uri: lb://search-service
           predicates:
             - Path=/api/v1/search/**
+          filters:
+            - name: RequestRateLimiter
+              args:
+                key-resolver: "#{@userOrIpKeyResolver}"
+                redis-rate-limiter.replenishRate: ${RATE_LIMIT_SEARCH_REPLENISH:30}
+                redis-rate-limiter.burstCapacity: ${RATE_LIMIT_SEARCH_BURST:60}
             
         # Health check route for search service (ELK test integration)
         - id: search-health
